@@ -272,7 +272,6 @@ def cmd_backup(command, config, args):
 
 def cmd_key(command, config, args):
     logging.debug('Running key command handler')
-    pp.pprint(args)
 
     check_config(config)
     check_forbidden_args(args.resticargs)
