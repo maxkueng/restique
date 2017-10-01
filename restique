@@ -116,9 +116,7 @@ def get_restic_path(config):
 
 def get_process(cmd, env = {}):
     env_with_path = env.copy()
-    env_with_path.update({
-        'PATH': os.environ['PATH'],
-    })
+    env_with_path.update(os.environ.copy())
 
     process = subprocess.Popen(
         cmd,
