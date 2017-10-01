@@ -231,6 +231,7 @@ def cmd_default(command, config, args):
     logging.debug('Running default command handler')
 
     check_config(config)
+    check_forbidden_args(args.resticargs)
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
@@ -247,7 +248,7 @@ def cmd_backup(command, config, args):
         'files',
     ])
 
-    check_forbidden_args([
+    check_forbidden_args(args.resticargs, [
         '--stdin',
         '--stdin-filename',
     ])
@@ -274,6 +275,7 @@ def cmd_key(command, config, args):
     pp.pprint(args)
 
     check_config(config)
+    check_forbidden_args(args.resticargs)
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
@@ -290,6 +292,7 @@ def cmd_key(command, config, args):
 
 def cmd_test(command, config, args):
     check_config(config)
+    check_forbidden_args(args)
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
