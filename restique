@@ -1,0 +1,308 @@
+#!/usr/bin/env python
+
+import pprint
+import argparse
+import logging
+import subprocess
+import json
+import shutil
+from pathlib import Path
+
+pp = pprint.PrettyPrinter(width=80)
+
+def fatal_exit(msg = 'An error occurred'):
+    logging.error(msg)
+    exit(1)
+
+def get_config_file_path(args):
+    if args.config:
+        p = Path(args.config).expanduser().resolve()
+        if p.is_file():
+            return str(p)
+        else:
+            fatal_exit('No config file located at \'' + args.config + '\'')
+
+    config_paths = [
+        './.restiquerc',
+        '~/.restiquerc',
+        '~/.config/restique/config',
+        '/etc/restique.rc',
+    ]
+
+    for file_path in config_paths:
+        file_path = Path(file_path).expanduser().resolve()
+        if file_path.is_file():
+            return str(file_path)
+
+    fatal_exit('Couldn\'t find a config file. Valid config file locations are ' + str(config_paths) + ' or specified through the --config argument')
+
+def merge_profiles(p1, p2):
+    p1_files = p1['files'] if 'files' in p1 else []
+    p2_files = p2['files'] if 'files' in p2 else []
+
+    p1_excludes = p1['excludes'] if 'excludes' in p1 else []
+    p2_excludes = p2['excludes'] if 'excludes' in p2 else []
+
+    new_profile = {}
+    new_profile.update(p1)
+    new_profile.update(p2)
+
+    new_profile['files'] = p1_files + p2_files
+    new_profile['excludes'] = p1_excludes + p2_excludes
+
+    return new_profile
+
+
+def get_profile_config(config, profile_name):
+    default_config = config['global'] if 'global' in config else {}
+    profiles = config['profiles'] if 'profiles' in config else {}
+    default_profile_name = config['default_profile'] if 'default_profile' in config else None
+    restic_path = config['restic_path'] if 'restic_path' in config else None;
+
+    if not profile_name and not default_profile_name:
+        fatal_exit('Profile not specified or no \'default_profile\'')
+
+    profile_name = profile_name if profile_name else default_profile_name
+
+    profile_config = merge_profiles({}, default_config)
+
+    for pname in profile_name.split(','):
+        if not pname in profiles.keys():
+            fatal_exit('Profile \'' + pname + '\' not found')
+
+        logging.debug('Merging profile \'' + pname + '\'')
+        profile_config = merge_profiles(profile_config, profiles[pname])
+
+    profile_config['restic_path'] = restic_path
+
+    return profile_config
+
+def check_config(config, required_keys = []):
+    minimum_required_keys = [
+        'password',
+        'repository',
+    ]
+
+    all_required_keys = minimum_required_keys + required_keys;
+
+    for key in all_required_keys:
+        if not key in config:
+            fatal_exit('Missing required config option \'' + key + '\'')
+
+    if config['repository'].startswith('swift:'):
+        fatal_exit('OpenStack Swift repositories are currently not supported')
+
+def check_forbidden_args(args, forbidden = []):
+    default_forbidden_args = [
+        '--password-file',
+    ]
+
+    all_forbidden_args = default_forbidden_args + forbidden
+
+    for key in args:
+        if key in all_forbidden_args:
+            fatal_exit('Argument \'' + key + '\' is currently not supported')
+
+def get_restic_path(config):
+    p = config['restic_path'] if 'restic_path' in config and config['restic_path'] != None else 'restic'
+    restic_path = shutil.which(p)
+    logging.debug('Restic path: \'' + restic_path + '\'')
+    if not restic_path:
+        fatal_exit('restic executable path not found')
+
+    return restic_path
+
+def run_command(env, cmd):
+    with subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                bufsize=1,
+                universal_newlines=True,
+                env=env
+            ) as p:
+        for line in p.stdout:
+            print(line, end='')
+
+def get_base_cmd(command, config):
+    cmd = []
+    cmd += [get_restic_path(config)]
+    cmd += ['--repo', config['repository']]
+
+    if 'quiet' in config and config['quiet'] == True:
+        cmd += ['--quiet']
+
+    if 'json' in config and config['json'] == True:
+        cmd += ['--json']
+
+    if 'no_lock' in config and config['no_lock'] == True:
+        cmd += ['--no-lock']
+
+    cmd += [command]
+
+    return cmd;
+
+def get_base_env(config):
+    env = {
+        'RESTIC_PASSWORD': config['password'],
+    }
+
+    if config['repository'].startswith('s3:'):
+        check_config(config, [
+            'aws_access_key',
+            'aws_secret_key',
+        ])
+        env.update({
+            'AWS_ACCESS_KEY_ID': config['aws_access_key'],
+            'AWS_SECRET_ACCESS_KEY': config['aws_secret_key'],
+        })
+
+    if config['repository'].startswith('b2:'):
+        check_config(config, [
+            'b2_account_id',
+            'b2_account_key',
+        ])
+        env.update({
+            'B2_ACCOUNT_ID': config['b2_account_id'],
+            'B2_ACCOUNT_KEY': config['b2_account_key'],
+        })
+
+    if config['repository'].startswith('azure:'):
+        check_config(config, [
+            'azure_account_name',
+            'azure_account_key',
+        ])
+        env.update({
+            'AZURE_ACCOUNT_NAME': config['azure_account_name'],
+            'AZURE_ACCOUNT_KEY': config['azure_account_key'],
+        })
+
+    if config['repository'].startswith('gs:'):
+        check_config(config, [
+            'google_project_id',
+            'google_application_credentials',
+        ])
+        env.update({
+            'GOOGLE_PROJECT_ID': config['google_project_id'],
+            'GOOGLE_APPLICATION_CREDENTIALS': config['google_application_credentials'],
+        })
+
+    return env
+
+def cmd_default(command, config, args):
+    logging.debug('Running default command handler')
+
+    check_config(config)
+
+    env = get_base_env(config)
+    cmd = get_base_cmd(command, config)
+
+    cmd += args.resticargs
+
+    logging.debug('Command: ' + ' '.join(cmd))
+    run_command(env, cmd)
+
+def cmd_backup(command, config, args):
+    logging.debug('Running backup command handler')
+
+    check_config(config, [
+        'files',
+    ])
+
+    check_forbidden_args([
+        '--stdin',
+        '--stdin-filename',
+    ])
+
+    env = get_base_env(config)
+    cmd = get_base_cmd(command, config)
+
+    cmd += config['files']
+
+    for pattern in config['excludes']:
+        cmd += [
+            '--exclude',
+            pattern,
+        ]
+
+    cmd += args.resticargs
+
+    logging.debug('Command: ' + ' '.join(cmd))
+
+    run_command(env, cmd)
+
+def cmd_test(command, config, args):
+    check_config(config)
+
+    env = get_base_env(config)
+    cmd = get_base_cmd(command, config)
+    logging.debug(command)
+    logging.debug(pp.pformat(config))
+    logging.debug(pp.pformat(env))
+    logging.debug(pp.pformat(cmd))
+
+def main(args, loglevel):
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
+
+    config_path = get_config_file_path(args)
+
+    logging.debug('Using config file: ' + config_path);
+
+    with open(config_path) as config_file:
+        config = json.load(config_file)
+
+    profile_config = get_profile_config(config, args.profile)
+
+    commands = {
+        'backup': cmd_backup,
+        'test': cmd_test,
+    }
+
+    if args.command in commands:
+        commands[args.command](args.command, profile_config, args)
+    else:
+        cmd_default(args.command, profile_config, args)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='A wrapper around restic that supports profiles')
+
+    parser.add_argument(
+        '-d',
+        '--debug',
+        action='store_true',
+        help='path to a config file',
+    )
+
+    parser.add_argument(
+        '-c',
+        '--config',
+        metavar='PATH',
+        help='path to a config file',
+    )
+
+    parser.add_argument(
+        '-p',
+        '--profile',
+        metavar='NAME',
+        help='specify which backup profile to use',
+    )
+
+    parser.add_argument(
+        'command',
+        help='restic command to run',
+    )
+
+    parser.add_argument(
+        'resticargs',
+        nargs=argparse.REMAINDER,
+        help='arguments passed directly to restic',
+    )
+
+    args = parser.parse_args()
+
+    if args.debug:
+        loglevel = logging.DEBUG
+    else:
+        loglevel = logging.INFO
+
+    main(args, loglevel)
