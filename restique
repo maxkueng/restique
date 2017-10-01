@@ -113,7 +113,7 @@ def get_restic_path(config):
 
     return restic_path
 
-def run_command(env, cmd):
+def run_command(cmd, env = {}):
     with subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -200,7 +200,7 @@ def cmd_default(command, config, args):
     cmd += args.resticargs
 
     logging.debug('Command: ' + ' '.join(cmd))
-    run_command(env, cmd)
+    run_command(cmd, env)
 
 def cmd_backup(command, config, args):
     logging.debug('Running backup command handler')
@@ -229,7 +229,7 @@ def cmd_backup(command, config, args):
 
     logging.debug('Command: ' + ' '.join(cmd))
 
-    run_command(env, cmd)
+    run_command(cmd, env)
 
 def cmd_test(command, config, args):
     check_config(config)
