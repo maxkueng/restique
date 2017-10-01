@@ -1,6 +1,4 @@
-![restique](restique.svg)
-========
-
+# ![restique](https://raw.githubusercontent.com/maxkueng/restique/master/restique.svg?sanitize=true)
 
 **restique** is a wrapper around the [restic][restic] backup tool that allows
 using multiple backup profiles defined in a JSON configuration file.  
