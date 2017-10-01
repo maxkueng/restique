@@ -41,7 +41,7 @@ restique [-h] [--debug] [--config PATH] [--profile NAME] command [resticargs]
    be used. If not specified, restique will use the `"default_profile"`
    provided in the config file.  
    Multiple profile names can be specified as a comma-separated list (without
-   spaces). If multiple profile names are provided they will be merged in to
+   spaces). If multiple profile names are provided they will be merged into
    each other in the order they are specified. This can be useful when
    combining partial profiles.
 
@@ -109,12 +109,11 @@ restique -p home restore latest --target /tmp/restore-home
  - `default_profile` _(string, optional):_ The name of the profile that will be
    used when no profile name is specified through the `--profile` argument.  
    Multiple profile names can be specified as a comma-separated list (without
-   spaces). If multiple profile names are provided they will be merged in to
+   spaces). If multiple profile names are provided they will be merged into
    each other in the order they are specified. This can be useful when
    combining partial profiles.
 
-
- - `global` _(object, optional)_: A global profile that will be merged in to
+ - `global` _(object, optional)_: A global profile that will be merged into
    all other profiles. If the non-global profile contains the same options the
    global options will be overridden by the profile. Except `files` and
    `excludes` will be combined.
@@ -142,7 +141,7 @@ restique -p home restore latest --target /tmp/restore-home
 
  - `profile.[NAME].repository` _(string, required)_: The repository path for
    the backup. Read the [restic docs][restic-init] to see how to format the
-   reopsitory path for your storage backend.
+   repository path for your storage backend.
 
  - `profile.[NAME].aws_access_key` _(string, optional)_: S3 access key. Used
    only when hosting the repository on S3.
