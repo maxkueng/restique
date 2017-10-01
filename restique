@@ -2,6 +2,7 @@
 
 import sys
 import os
+import signal
 import pprint
 import argparse
 import logging
@@ -114,27 +115,52 @@ def get_restic_path(config):
 
     return restic_path
 
-def run_command(cmd, env = {}):
+def get_process(cmd, env = {}):
     env_with_path = env.copy()
     env_with_path.update({
         'PATH': os.environ['PATH'],
     })
 
-    with subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                bufsize=1,
-                universal_newlines=True,
-                env=env_with_path,
-            ) as process:
+    process = subprocess.Popen(
+        cmd,
+        #stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True,
+        env=env_with_path,
+    )
+
+    return process
+
+def run_interactive_command(cmd, env = {}):
+    try:
+        process = get_process(cmd, env)
+        output = process.communicate()[0]
+
+        print(output)
+
+        rc = process.poll()
+        sys.exit(rc)
+    except KeyboardInterrupt:
+        logging.info('Received keyboard interrupt')
+        sys.exit(None)
+
+def run_noninteractive_command(cmd, env = {}):
+    try:
+        process = get_process(cmd, env)
         while True:
             output = process.stdout.readline()
             if output == '' and process.poll() is not None:
                 break
             if output:
                 print(output.strip())
+
         rc = process.poll()
         sys.exit(rc)
+
+    except KeyboardInterrupt:
+        logging.info('Received keyboard interrupt')
+        sys.exit(None)
 
 
 def get_base_cmd(command, config):
@@ -213,7 +239,7 @@ def cmd_default(command, config, args):
     cmd += args.resticargs
 
     logging.debug('Command: ' + ' '.join(cmd))
-    run_command(cmd, env)
+    run_noninteractive_command(cmd, env)
 
 def cmd_backup(command, config, args):
     logging.debug('Running backup command handler')
@@ -242,7 +268,26 @@ def cmd_backup(command, config, args):
 
     logging.debug('Command: ' + ' '.join(cmd))
 
-    run_command(cmd, env)
+    run_noninteractive_command(cmd, env)
+
+def cmd_key(command, config, args):
+    logging.debug('Running key command handler')
+    pp.pprint(args)
+
+    check_config(config)
+
+    env = get_base_env(config)
+    cmd = get_base_cmd(command, config)
+
+    cmd += args.resticargs
+
+    logging.debug('Command: ' + ' '.join(cmd))
+
+    if args.resticargs and 'add' in args.resticargs:
+        logging.debug('Running interactive command')
+        run_interactive_command(cmd, env)
+    else:
+        run_noninteractive_command(cmd, env)
 
 def cmd_test(command, config, args):
     check_config(config)
@@ -268,6 +313,7 @@ def main(args, loglevel):
 
     commands = {
         'backup': cmd_backup,
+        'key': cmd_key,
         'test': cmd_test,
     }
 
