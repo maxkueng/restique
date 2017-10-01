@@ -208,6 +208,52 @@ restique check
 restique restore latest --target /tmp/home-restored
 ```
 
+### Backing Up Docker Images to Backblaze
+
+**Config:**
+```js
+{
+  "default_profile": "dockerimages",
+  "profiles": {
+    "dockerimages": {
+      "repository": "b2:mydockerbackups:/images",
+      "b2_account_id": "1a2345b67890",
+      "b2_account_key": "1234a5678b901c3d45678ef901g2h34567i89jklmn",
+      "password": "correct horse battery staple"
+    }
+  }
+}
+```
+
+**Initialize:**
+```sh
+restique init
+```
+
+**Export and backup the busybox docker image:**
+```sh
+docker save busybox | restique backup --stdin --stdin-name busybox.tar
+```
+
+**List the contents of the latest snapshot:**
+```sh
+restique ls latest
+```
+Output:
+```
+snapshot fb120820 of [busybox.tar] at 2017-10-01 20:30:03.222656757 +0200 CEST):
+/busybox.tar
+```
+
+**Restore the docker image:**
+```sh
+restique restore latest --target /tmp/ --include busybox.tar
+```
+
+```sh
+docker load < /tmp/busybox.tar
+```
+
 ### Combining Partial Profiles
 
 Here we are going to create four partial profiles. Two of them contain
