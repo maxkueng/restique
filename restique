@@ -119,10 +119,17 @@ def run_command(cmd, env = {}):
                 stdout=subprocess.PIPE,
                 bufsize=1,
                 universal_newlines=True,
-                env=env
-            ) as p:
-        for line in p.stdout:
-            print(line, end='')
+                env=env,
+            ) as process:
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                print(output.strip())
+        rc = process.poll()
+        sys.exit(rc)
+
 
 def get_base_cmd(command, config):
     cmd = []
