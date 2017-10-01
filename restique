@@ -244,25 +244,26 @@ def cmd_default(command, config, args):
 def cmd_backup(command, config, args):
     logging.debug('Running backup command handler')
 
-    check_config(config, [
-        'files',
-    ])
-
-    check_forbidden_args(args.resticargs, [
-        '--stdin',
-        '--stdin-filename',
-    ])
+    check_config(config)
+    check_forbidden_args(args.resticargs)
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
 
-    cmd += config['files']
+    from_stdin = '--stdin' in args.resticargs
 
-    for pattern in config['excludes']:
-        cmd += [
-            '--exclude',
-            pattern,
-        ]
+    if not from_stdin:
+        check_config(config, [
+            'files',
+        ])
+
+        cmd += config['files']
+
+        for pattern in config['excludes']:
+            cmd += [
+                '--exclude',
+                pattern,
+            ]
 
     cmd += args.resticargs
 
