@@ -33,8 +33,8 @@ restique [-h] [--debug] [--config PATH] [--profile NAME] command [resticargs]
  - `-d, --debug`: Set the log level to debug.
 
  - `-c PATH, --config PATH`: Specify the path to the configuration file. If not
-   specified restic will check "./.restiquerc", "~/.restiquerc",
-   "~/.config/restique/config", "/etc/restique.rc" in this exact order and use
+   specified restic will check `./.restiquerc`, `~/.restiquerc`,
+   `~/.config/restique/config`, `/etc/restique.rc` in this exact order and use
    the first one that exists.
 
  - `-p NAME(S), --profile NAME(S)`: Specify the name of the backup profile to
