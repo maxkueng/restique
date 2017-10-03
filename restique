@@ -306,8 +306,11 @@ def main(args, loglevel):
 
     logging.debug('Using config file: ' + config_path);
 
-    with open(config_path) as config_file:
-        config = json.load(config_file)
+    try:
+        with open(config_path) as config_file:
+            config = json.load(config_file)
+    except json.decoder.JSONDecodeError as err:
+        fatal_exit('Invalid JSON in config file ' + config_path + '\n  ' + str(err));
 
     profile_config = get_profile_config(config, args.profile)
 
