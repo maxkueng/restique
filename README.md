@@ -32,6 +32,8 @@ restique [-h] [--debug] [--config PATH] [--profile NAME] command [resticargs]
 
  - `-h, --help`: Print the help / usage text.
 
+ - `-V, --version`: Print the version number.
+
  - `-d, --debug`: Set the log level to debug.
 
  - `-c PATH, --config PATH`: Specify the path to the configuration file. If not
