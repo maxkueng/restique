@@ -2,6 +2,7 @@
 
 import sys
 import os
+import platform
 import pprint
 import argparse
 import logging
@@ -9,6 +10,9 @@ import subprocess
 import json
 import shutil
 from pathlib import Path
+
+__PROG__ = 'restique'
+__VERSION__ = '0.0.1'
 
 pp = pprint.PrettyPrinter(width=80)
 
@@ -152,6 +156,8 @@ def run_noninteractive_command(cmd, env = {}):
             if output:
                 print(output.strip())
 
+            sys.stdout.flush()
+
         rc = process.poll()
         sys.exit(rc)
 
@@ -288,6 +294,13 @@ def cmd_key(command, config, args):
     else:
         run_noninteractive_command(cmd, env)
 
+def cmd_version(command, config, args):
+    logging.debug('Running version command handler')
+    print(__PROG__ + ' ' + __VERSION__)
+    print('python ' + platform.python_version())
+    cmd = get_base_cmd(command, config)
+    run_noninteractive_command(cmd)
+
 def cmd_test(command, config, args):
     check_config(config)
     check_forbidden_args(args)
@@ -317,6 +330,7 @@ def main(args, loglevel):
     commands = {
         'backup': cmd_backup,
         'key': cmd_key,
+        'version': cmd_version,
         'test': cmd_test,
     }
 
@@ -327,7 +341,10 @@ def main(args, loglevel):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='A wrapper around restic that supports profiles')
+    parser = argparse.ArgumentParser(
+        prog=__PROG__,
+        description='A wrapper around restic that supports profiles',
+    )
 
     parser.add_argument(
         '-d',
@@ -348,6 +365,12 @@ if __name__ == '__main__':
         '--profile',
         metavar='NAME',
         help='specify which backup profile to use',
+    )
+
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='%(prog)s 0.0.1',
     )
 
     parser.add_argument(
