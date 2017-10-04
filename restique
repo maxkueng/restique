@@ -154,7 +154,7 @@ def run_noninteractive_command(cmd, env = {}):
             if output == '' and process.poll() is not None:
                 break
             if output:
-                print(output.strip())
+                sys.stdout.write(output)
 
             sys.stdout.flush()
 
