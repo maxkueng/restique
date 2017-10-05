@@ -42,22 +42,36 @@ def get_config_file_path(args):
 
     fatal_exit('Couldn\'t find a config file. Valid config file locations are ' + str(config_paths) + ' or specified through the --config argument')
 
+profile_field_types = {
+    'files': list,
+    'excludes': list,
+}
+
 def merge_profiles(p1, p2):
-    p1_files = p1['files'] if 'files' in p1 else []
-    p2_files = p2['files'] if 'files' in p2 else []
+    merged_profile = {}
+    keys = list(set(list(p1.keys()) + list(p2.keys())))
 
-    p1_excludes = p1['excludes'] if 'excludes' in p1 else []
-    p2_excludes = p2['excludes'] if 'excludes' in p2 else []
+    for key in keys:
+        t = profile_field_types[key] if key in profile_field_types else None
 
-    new_profile = {}
-    new_profile.update(p1)
-    new_profile.update(p2)
+        if t == dict:
+            p1_value = p1[key] if key in p1 else {}
+            p2_value = p2[key] if key in p2 else {}
+            merged_profile[key] = merge_profiles(p1_value, p2_value)
 
-    new_profile['files'] = p1_files + p2_files
-    new_profile['excludes'] = p1_excludes + p2_excludes
+        elif t == list:
+            p1_value = p1[key] if key in p1 else []
+            p2_value = p2[key] if key in p2 else []
+            new_value = p1_value + p2_value
+            merged_profile[key] = new_value
 
-    return new_profile
+        else:
+            new_value = p1[key] if key in p1 else None;
+            if key in p2:
+                new_value = p2[key]
+            merged_profile[key] = new_value
 
+    return merged_profile
 
 def get_profile_config(config, profile_name):
     default_config = config['global'] if 'global' in config else {}
