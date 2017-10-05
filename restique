@@ -158,10 +158,11 @@ def run_interactive_command(cmd, env = {}):
         sys.stdout.flush()
 
         rc = process.poll()
-        sys.exit(rc)
+        return rc;
+
     except KeyboardInterrupt:
         logging.info('Received keyboard interrupt')
-        sys.exit(None)
+        return None;
 
 def run_noninteractive_command(cmd, env = {}):
     logging.debug('Non-interactive command: ' + ' '.join(cmd))
@@ -178,11 +179,11 @@ def run_noninteractive_command(cmd, env = {}):
             sys.stdout.flush()
 
         rc = process.poll()
-        sys.exit(rc)
+        return rc;
 
     except KeyboardInterrupt:
         logging.info('Received keyboard interrupt')
-        sys.exit(None)
+        return(None)
 
 
 def get_base_cmd(command, config):
@@ -261,7 +262,8 @@ def cmd_default(command, config, args):
 
     cmd += args.resticargs
 
-    run_noninteractive_command(cmd, env)
+    rc = run_noninteractive_command(cmd, env)
+    sys.exit(rc)
 
 def cmd_backup(command, config, args):
     logging.debug('Running backup command handler')
@@ -289,7 +291,8 @@ def cmd_backup(command, config, args):
 
     cmd += args.resticargs
 
-    run_noninteractive_command(cmd, env)
+    rc = run_noninteractive_command(cmd, env)
+    sys.exit(rc)
 
 def cmd_key(command, config, args):
     logging.debug('Running key command handler')
@@ -303,16 +306,18 @@ def cmd_key(command, config, args):
     cmd += args.resticargs
 
     if args.resticargs and 'add' in args.resticargs:
-        run_interactive_command(cmd, env)
+        rc = run_interactive_command(cmd, env)
+        sys.exit(rc)
     else:
-        run_noninteractive_command(cmd, env)
+        rc = run_noninteractive_command(cmd, env)
+        sys.exit(rc)
 
 def cmd_version(command, config, args):
     logging.debug('Running version command handler')
     print(__PROG__ + ' ' + __VERSION__)
     print('python ' + platform.python_version())
     cmd = get_base_cmd(command, config)
-    run_noninteractive_command(cmd)
+    rc = sys.exit(run_noninteractive_command(cmd))
 
 def cmd_test(command, config, args):
     check_config(config)
