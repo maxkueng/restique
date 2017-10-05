@@ -112,10 +112,10 @@ def check_forbidden_args(args, forbidden = []):
 def get_restic_path(config):
     p = config['restic_path'] if 'restic_path' in config and config['restic_path'] != None else 'restic'
     restic_path = shutil.which(p)
-    logging.debug('Restic path: \'' + restic_path + '\'')
     if not restic_path:
         fatal_exit('restic executable path not found')
 
+    logging.debug('Restic path: \'' + restic_path + '\'')
     return restic_path
 
 def get_process(cmd, env = {}):
@@ -134,6 +134,8 @@ def get_process(cmd, env = {}):
     return process
 
 def run_interactive_command(cmd, env = {}):
+    logging.debug('Interactive command: ' + ' '.join(cmd))
+
     try:
         process = get_process(cmd, env)
         output = process.communicate()[0]
@@ -148,6 +150,8 @@ def run_interactive_command(cmd, env = {}):
         sys.exit(None)
 
 def run_noninteractive_command(cmd, env = {}):
+    logging.debug('Non-interactive command: ' + ' '.join(cmd))
+
     try:
         process = get_process(cmd, env)
         while True:
@@ -243,7 +247,6 @@ def cmd_default(command, config, args):
 
     cmd += args.resticargs
 
-    logging.debug('Command: ' + ' '.join(cmd))
     run_noninteractive_command(cmd, env)
 
 def cmd_backup(command, config, args):
@@ -272,8 +275,6 @@ def cmd_backup(command, config, args):
 
     cmd += args.resticargs
 
-    logging.debug('Command: ' + ' '.join(cmd))
-
     run_noninteractive_command(cmd, env)
 
 def cmd_key(command, config, args):
@@ -287,10 +288,7 @@ def cmd_key(command, config, args):
 
     cmd += args.resticargs
 
-    logging.debug('Command: ' + ' '.join(cmd))
-
     if args.resticargs and 'add' in args.resticargs:
-        logging.debug('Running interactive command')
         run_interactive_command(cmd, env)
     else:
         run_noninteractive_command(cmd, env)
