@@ -138,7 +138,8 @@ def run_interactive_command(cmd, env = {}):
         process = get_process(cmd, env)
         output = process.communicate()[0]
 
-        print(output)
+        sys.stdout.write(output)
+        sys.stdout.flush()
 
         rc = process.poll()
         sys.exit(rc)
