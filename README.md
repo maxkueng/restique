@@ -218,10 +218,10 @@ variables including the ones passed to restic. Hooks are executed in the
 following order:
 
  - `pre-repo`
- - `pre-[COMMAND]`
- - _call to restic_
- - `post-[COMMAND]`
- - `post-repo`
+ - `pre-[COMMAND]` (unless pre-repo failed)
+ - _call to restic_ (unless pre-[COMMAND] failed)
+ - `post-[COMMAND]` (unless the restic command failed)
+ - `post-repo` (unless post-[COMMAND] failed)
 
 So in case of `restique backup` it would call `pre-repo`, `pre-backup`, `restic
 backup`, `post-backup` and finally `post-repo`.
