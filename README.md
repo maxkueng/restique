@@ -389,6 +389,39 @@ restique -p remote restore e61c4ad7 --target /tmp/work-restored
 restique -p local restore 0eb99523 --target /tmp/personal-restored
 ```
 
+### Run Only if External Drive is Mounted
+
+**Config:**
+```js
+{
+  "default_profile": "home",
+  "profiles": {
+    "home": {
+      "repository": "/mnt/my_external_drive/backups",
+      "password": "correct horse battery staple",
+      "files": [
+        "/home"
+      ],
+      "pre-repo": [
+        "grep -qs '/mnt/my_external_drive/backups' /proc/mounts"
+      ]
+    }
+  }
+}
+```
+
+**Try backup:**
+
+```sh
+restique backup
+```
+
+Output:
+```
+ERROR: Command 'grep -qs '/mnt/my_external_drive/backups' /proc/mounts' returned non-zero exit status 1.
+ERROR: One or more 'pre-repo' hooks failed.
+```
+
 ## License
 
 Copyright (c) 2017 Max Kueng
