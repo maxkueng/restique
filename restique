@@ -42,22 +42,39 @@ def get_config_file_path(args):
 
     fatal_exit('Couldn\'t find a config file. Valid config file locations are ' + str(config_paths) + ' or specified through the --config argument')
 
+profile_field_types = {
+    'files': list,
+    'excludes': list,
+    'hooks': dict,
+    'pre-repo': list,
+    'post-repo': list,
+}
+
 def merge_profiles(p1, p2):
-    p1_files = p1['files'] if 'files' in p1 else []
-    p2_files = p2['files'] if 'files' in p2 else []
+    merged_profile = {}
+    keys = list(set(list(p1.keys()) + list(p2.keys())))
 
-    p1_excludes = p1['excludes'] if 'excludes' in p1 else []
-    p2_excludes = p2['excludes'] if 'excludes' in p2 else []
+    for key in keys:
+        t = profile_field_types[key] if key in profile_field_types else None
 
-    new_profile = {}
-    new_profile.update(p1)
-    new_profile.update(p2)
+        if t == dict:
+            p1_value = p1[key] if key in p1 else {}
+            p2_value = p2[key] if key in p2 else {}
+            merged_profile[key] = merge_profiles(p1_value, p2_value)
 
-    new_profile['files'] = p1_files + p2_files
-    new_profile['excludes'] = p1_excludes + p2_excludes
+        elif t == list:
+            p1_value = p1[key] if key in p1 else []
+            p2_value = p2[key] if key in p2 else []
+            new_value = p1_value + p2_value
+            merged_profile[key] = new_value
 
-    return new_profile
+        else:
+            new_value = p1[key] if key in p1 else None;
+            if key in p2:
+                new_value = p2[key]
+            merged_profile[key] = new_value
 
+    return merged_profile
 
 def get_profile_config(config, profile_name):
     default_config = config['global'] if 'global' in config else {}
@@ -112,10 +129,10 @@ def check_forbidden_args(args, forbidden = []):
 def get_restic_path(config):
     p = config['restic_path'] if 'restic_path' in config and config['restic_path'] != None else 'restic'
     restic_path = shutil.which(p)
-    logging.debug('Restic path: \'' + restic_path + '\'')
     if not restic_path:
         fatal_exit('restic executable path not found')
 
+    logging.debug('Restic path: \'' + restic_path + '\'')
     return restic_path
 
 def get_process(cmd, env = {}):
@@ -134,19 +151,25 @@ def get_process(cmd, env = {}):
     return process
 
 def run_interactive_command(cmd, env = {}):
+    logging.debug('Interactive command: ' + ' '.join(cmd))
+
     try:
         process = get_process(cmd, env)
         output = process.communicate()[0]
 
-        print(output)
+        sys.stdout.write(output)
+        sys.stdout.flush()
 
         rc = process.poll()
-        sys.exit(rc)
+        return rc;
+
     except KeyboardInterrupt:
         logging.info('Received keyboard interrupt')
-        sys.exit(None)
+        return None;
 
 def run_noninteractive_command(cmd, env = {}):
+    logging.debug('Non-interactive command: ' + ' '.join(cmd))
+
     try:
         process = get_process(cmd, env)
         while True:
@@ -159,12 +182,50 @@ def run_noninteractive_command(cmd, env = {}):
             sys.stdout.flush()
 
         rc = process.poll()
-        sys.exit(rc)
+        return rc;
 
     except KeyboardInterrupt:
         logging.info('Received keyboard interrupt')
-        sys.exit(None)
+        return(None)
 
+def run_hook(cmd, env):
+    env_with_path = env.copy()
+    env_with_path.update(os.environ.copy())
+
+    return subprocess.run(
+        cmd,
+        env=env_with_path,
+        shell=True,
+        check=True,
+    )
+
+
+def run_hooks(config, env, hook_name):
+    if ('hooks' not in config):
+        logging.debug('No hooks to run at all')
+        return True
+
+    if (hook_name not in config['hooks']):
+        logging.debug('No ' + hook_name + ' hooks to run')
+        return True
+
+    hooks = config['hooks'][hook_name]
+
+    successful = True
+    for hook_cmd in hooks:
+        logging.debug('Running ' + hook_name + ' hook: ' + hook_cmd)
+        try:
+            rc = run_hook(hook_cmd, env)
+        except subprocess.CalledProcessError as err:
+            successful = False
+            logging.error(err)
+            break
+
+    return successful
+
+def run_cmd_hooks(config, env, hook_name):
+    if not run_hooks(config, env, hook_name):
+        fatal_exit('One or more \'' + hook_name + '\' hooks failed.')
 
 def get_base_cmd(command, config):
     cmd = []
@@ -242,8 +303,12 @@ def cmd_default(command, config, args):
 
     cmd += args.resticargs
 
-    logging.debug('Command: ' + ' '.join(cmd))
-    run_noninteractive_command(cmd, env)
+    run_cmd_hooks(config, env, 'pre-repo')
+    run_cmd_hooks(config, env, 'pre-' + command)
+    rc = run_noninteractive_command(cmd, env)
+    run_cmd_hooks(config, env, 'post-' + command)
+    run_cmd_hooks(config, env, 'post-repo')
+    sys.exit(rc)
 
 def cmd_backup(command, config, args):
     logging.debug('Running backup command handler')
@@ -271,9 +336,12 @@ def cmd_backup(command, config, args):
 
     cmd += args.resticargs
 
-    logging.debug('Command: ' + ' '.join(cmd))
-
-    run_noninteractive_command(cmd, env)
+    run_cmd_hooks(config, env, 'pre-repo')
+    run_cmd_hooks(config, env, 'pre-' + command)
+    rc = run_noninteractive_command(cmd, env)
+    run_cmd_hooks(config, env, 'post-' + command)
+    run_cmd_hooks(config, env, 'post-repo')
+    sys.exit(rc)
 
 def cmd_key(command, config, args):
     logging.debug('Running key command handler')
@@ -286,31 +354,53 @@ def cmd_key(command, config, args):
 
     cmd += args.resticargs
 
-    logging.debug('Command: ' + ' '.join(cmd))
+    rc = None
+    run_cmd_hooks(config, env, 'pre-repo')
+    run_cmd_hooks(config, env, 'pre-' + command)
 
     if args.resticargs and 'add' in args.resticargs:
-        logging.debug('Running interactive command')
-        run_interactive_command(cmd, env)
+        rc = run_interactive_command(cmd, env)
     else:
-        run_noninteractive_command(cmd, env)
+        rc = run_noninteractive_command(cmd, env)
+
+    run_cmd_hooks(config, env, 'post-' + command)
+    run_cmd_hooks(config, env, 'post-repo')
+
+    sys.exit(rc)
 
 def cmd_version(command, config, args):
     logging.debug('Running version command handler')
+
+    cmd = get_base_cmd(command, config)
+
+    run_cmd_hooks(config, {}, 'pre-repo')
+    run_cmd_hooks(config, {}, 'pre-' + command)
     print(__PROG__ + ' ' + __VERSION__)
     print('python ' + platform.python_version())
-    cmd = get_base_cmd(command, config)
-    run_noninteractive_command(cmd)
+    rc = run_noninteractive_command(cmd, {})
+    run_cmd_hooks(config, {}, 'post-' + command)
+    run_cmd_hooks(config, {}, 'post-repo')
+
+    sys.exit(rc)
 
 def cmd_test(command, config, args):
     check_config(config)
-    check_forbidden_args(args)
+    check_forbidden_args(args.resticargs)
+
+    env = get_base_env(config)
+    if not run_hooks(config, env, 'pre-repo'):
+        fatal_exit('Hooks failed.')
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
+    run_cmd_hooks(config, env, 'pre-repo')
+    run_cmd_hooks(config, env, 'pre-' + command)
     logging.debug(command)
     logging.debug(pp.pformat(config))
     logging.debug(pp.pformat(env))
     logging.debug(pp.pformat(cmd))
+    run_cmd_hooks(config, env, 'post-' + command)
+    run_cmd_hooks(config, env, 'post-repo')
 
 def main(args, loglevel):
     logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
