@@ -96,7 +96,21 @@ restique -p home restore latest --target /tmp/restore-home
       "azure_account_name": "...",
       "azure_account_key": "...",
       "google_project_id": "...",
-      "google_application_credentials": "..."
+      "google_application_credentials": "...",
+      "hooks": {
+        "pre-repo": [
+          "some-shell-commands"
+        ],
+        "post-repo": [
+          // ...
+        ],
+        "pre-<COMMAND>": [
+          // ...
+        ],
+        "post-<COMMAND>": [
+          // ...
+        ]
+      }
     },
     "my_other_profile": {
       // ...
@@ -168,6 +182,49 @@ restique -p home restore latest --target /tmp/restore-home
  - `profile.[NAME].google_application_credentials` _(string, optional)_: File
    path to Google Cloud Storage application credentials file. Used only when
    hosting the repository on Google Cloud Storage.
+
+ - `profile.[NAME].hooks.pre-repo` _(array of strings, optional)_: An array of
+   shell commands that will be executed sequentially and in order before each
+   restic command that accesses the repo. If one of the shell commands fails
+   (i.e. exits with a non-zero exit code) all following commands including the
+   restic command will not run and the program will exit.
+
+ - `profile.[NAME].hooks.post-repo` _(array of strings, optional)_: An array of
+   shell commands that will be executed sequentially and in order after each
+   restic command that accesses the repo. If one of the shell commands fails
+   (i.e. exits with a non-zero exit code) all following commands will not run
+   and the program will exit.
+
+ - `profile.[NAME].hooks.pre-[COMMAND]` _(array of strings, optional)_: An
+   array of shell commands that will be executed sequentially and in order
+   before each restic `[COMMAND]` command. If one of the shell commands fails
+   (i.e. exits with a non-zero exit code) all following commands including the
+   restic command will not run and the program will exit.
+
+ - `profile.[NAME].hooks.post-[COMMAND]` _(array of strings, optional)_: An
+   array of shell commands that will be executed sequentially and in order
+   after each restic `COMMAND` command. If one of the shell commands fails
+   (i.e. exits with a non-zero exit code) all following commands will not run
+   and the program will exit.
+
+### About Hooks
+
+Hooks can be used to do stuff before and after the repo is accessed, or before
+and after a specific command is executed. For example, a USB drive could be
+mounted in the `pre-repo` hook and then unmounted in the `post-repo` hook.
+
+Each hook is executed in a separate shell and has access to all environment
+variables including the ones passed to restic. Hooks are executed in the
+following order:
+
+ - `pre-repo`
+ - `pre-[COMMAND]`
+ - _call to restic_
+ - `post-[COMMAND]`
+ - `post-repo`
+
+So in case of `restique backup` it would call `pre-repo`, `pre-backup`, `restic
+backup`, `post-backup` and finally `post-repo`.
 
 ## Examples
 

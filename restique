@@ -45,6 +45,9 @@ def get_config_file_path(args):
 profile_field_types = {
     'files': list,
     'excludes': list,
+    'hooks': dict,
+    'pre-repo': list,
+    'post-repo': list,
 }
 
 def merge_profiles(p1, p2):
@@ -185,6 +188,44 @@ def run_noninteractive_command(cmd, env = {}):
         logging.info('Received keyboard interrupt')
         return(None)
 
+def run_hook(cmd, env):
+    env_with_path = env.copy()
+    env_with_path.update(os.environ.copy())
+
+    return subprocess.run(
+        cmd,
+        env=env_with_path,
+        shell=True,
+        check=True,
+    )
+
+
+def run_hooks(config, env, hook_name):
+    if ('hooks' not in config):
+        logging.debug('No hooks to run at all')
+        return True
+
+    if (hook_name not in config['hooks']):
+        logging.debug('No ' + hook_name + ' hooks to run')
+        return True
+
+    hooks = config['hooks'][hook_name]
+
+    successful = True
+    for hook_cmd in hooks:
+        logging.debug('Running ' + hook_name + ' hook: ' + hook_cmd)
+        try:
+            rc = run_hook(hook_cmd, env)
+        except subprocess.CalledProcessError as err:
+            successful = False
+            logging.error(err)
+            break
+
+    return successful
+
+def run_cmd_hooks(config, env, hook_name):
+    if not run_hooks(config, env, hook_name):
+        fatal_exit('One or more \'' + hook_name + '\' hooks failed.')
 
 def get_base_cmd(command, config):
     cmd = []
@@ -262,7 +303,11 @@ def cmd_default(command, config, args):
 
     cmd += args.resticargs
 
+    run_cmd_hooks(config, env, 'pre-repo')
+    run_cmd_hooks(config, env, 'pre-' + command)
     rc = run_noninteractive_command(cmd, env)
+    run_cmd_hooks(config, env, 'post-' + command)
+    run_cmd_hooks(config, env, 'post-repo')
     sys.exit(rc)
 
 def cmd_backup(command, config, args):
@@ -291,7 +336,11 @@ def cmd_backup(command, config, args):
 
     cmd += args.resticargs
 
+    run_cmd_hooks(config, env, 'pre-repo')
+    run_cmd_hooks(config, env, 'pre-' + command)
     rc = run_noninteractive_command(cmd, env)
+    run_cmd_hooks(config, env, 'post-' + command)
+    run_cmd_hooks(config, env, 'post-repo')
     sys.exit(rc)
 
 def cmd_key(command, config, args):
@@ -305,30 +354,53 @@ def cmd_key(command, config, args):
 
     cmd += args.resticargs
 
+    rc = None
+    run_cmd_hooks(config, env, 'pre-repo')
+    run_cmd_hooks(config, env, 'pre-' + command)
+
     if args.resticargs and 'add' in args.resticargs:
         rc = run_interactive_command(cmd, env)
-        sys.exit(rc)
     else:
         rc = run_noninteractive_command(cmd, env)
-        sys.exit(rc)
+
+    run_cmd_hooks(config, env, 'post-' + command)
+    run_cmd_hooks(config, env, 'post-repo')
+
+    sys.exit(rc)
 
 def cmd_version(command, config, args):
     logging.debug('Running version command handler')
+
+    cmd = get_base_cmd(command, config)
+
+    run_cmd_hooks(config, {}, 'pre-repo')
+    run_cmd_hooks(config, {}, 'pre-' + command)
     print(__PROG__ + ' ' + __VERSION__)
     print('python ' + platform.python_version())
-    cmd = get_base_cmd(command, config)
-    rc = sys.exit(run_noninteractive_command(cmd))
+    rc = run_noninteractive_command(cmd, {})
+    run_cmd_hooks(config, {}, 'post-' + command)
+    run_cmd_hooks(config, {}, 'post-repo')
+
+    sys.exit(rc)
 
 def cmd_test(command, config, args):
     check_config(config)
-    check_forbidden_args(args)
+    check_forbidden_args(args.resticargs)
+
+    env = get_base_env(config)
+    if not run_hooks(config, env, 'pre-repo'):
+        fatal_exit('Hooks failed.')
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
+    run_cmd_hooks(config, env, 'pre-repo')
+    run_cmd_hooks(config, env, 'pre-' + command)
     logging.debug(command)
     logging.debug(pp.pformat(config))
     logging.debug(pp.pformat(env))
     logging.debug(pp.pformat(cmd))
+    run_cmd_hooks(config, env, 'post-' + command)
+    run_cmd_hooks(config, env, 'post-repo')
 
 def main(args, loglevel):
     logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
