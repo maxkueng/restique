@@ -150,6 +150,17 @@ def get_process(cmd, env = {}):
 
     return process
 
+def run_quiet_command(cmd, env = {}):
+    logging.debug('Quiet command: ' + ' '.join(cmd))
+
+    p = subprocess.run(
+        cmd,
+        env=env,
+        capture_output=True,
+        shell=False,
+    )
+    return p.returncode
+
 def run_interactive_command(cmd, env = {}):
     logging.debug('Interactive command: ' + ' '.join(cmd))
 
@@ -292,6 +303,22 @@ def get_base_env(config):
 
     return env
 
+def initialize(config, args):
+    logging.debug('Checking if repos is initialized')
+    env = get_base_env(config)
+    cmd = get_base_cmd('snapshots', config)
+    rc = run_quiet_command(cmd, env)
+    if rc != 0:
+        logging.debug('Repo not yet initialized')
+        logging.debug('Initializing repo')
+        initCmd = get_base_cmd('init', config)
+        initRc = run_noninteractive_command(initCmd, env)
+
+        if initRc != 0:
+            sys.exit(rc)
+    else:
+        logging.debug('Repo already initialized')
+
 def cmd_default(command, config, args):
     logging.debug('Running default command handler')
 
@@ -305,6 +332,7 @@ def cmd_default(command, config, args):
 
     run_cmd_hooks(config, env, 'pre-repo')
     run_cmd_hooks(config, env, 'pre-' + command)
+    initialize(config, args)
     rc = run_noninteractive_command(cmd, env)
     run_cmd_hooks(config, env, 'post-' + command)
     run_cmd_hooks(config, env, 'post-repo')
@@ -339,6 +367,7 @@ def cmd_backup(command, config, args):
 
     run_cmd_hooks(config, env, 'pre-repo')
     run_cmd_hooks(config, env, 'pre-' + command)
+    initialize(config, args)
     rc = run_noninteractive_command(cmd, env)
     run_cmd_hooks(config, env, 'post-' + command)
     run_cmd_hooks(config, env, 'post-repo')
@@ -359,6 +388,7 @@ def cmd_key(command, config, args):
     run_cmd_hooks(config, env, 'pre-repo')
     run_cmd_hooks(config, env, 'pre-' + command)
 
+    initialize(config, args)
     if args.resticargs and 'add' in args.resticargs:
         rc = run_interactive_command(cmd, env)
     else:
