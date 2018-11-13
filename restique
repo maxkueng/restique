@@ -328,11 +328,12 @@ def cmd_backup(command, config, args):
 
         cmd += config['files']
 
-        for pattern in config['excludes']:
-            cmd += [
-                '--exclude',
-                pattern,
-            ]
+        if ('excludes' in config):
+            for pattern in config['excludes']:
+                cmd += [
+                    '--exclude',
+                    pattern,
+                ]
 
     cmd += args.resticargs
 
