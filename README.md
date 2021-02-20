@@ -137,7 +137,7 @@ restique -p home restore latest --target /tmp/restore-home
    `excludes` will be combined.
 
  - `profiles.[NAME].initialize` _(boolean, optional, default: false)_: If true,
-   it will automatically initialize an uninitialize repository.
+   it will automatically initialize an uninitialized repository.
 
  - `profiles.[NAME].json` _(boolean, optional, default: false)_: Calls restic
    with the `--json` argument.
