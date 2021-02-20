@@ -101,13 +101,13 @@ restique -p home restore latest --target /tmp/restore-home
         "pre-repo": [
           "some-shell-commands"
         ],
-        "post-repo": [
+        "post_repo": [
           // ...
         ],
         "pre-<COMMAND>": [
           // ...
         ],
-        "post-<COMMAND>": [
+        "post_<COMMAND>": [
           // ...
         ]
       }
@@ -189,7 +189,7 @@ restique -p home restore latest --target /tmp/restore-home
    (i.e. exits with a non-zero exit code) all following commands including the
    restic command will not run and the program will exit.
 
- - `profile.[NAME].hooks.post-repo` _(array of strings, optional)_: An array of
+ - `profile.[NAME].hooks.post_repo` _(array of strings, optional)_: An array of
    shell commands that will be executed sequentially and in order after each
    restic command that accesses the repo. If one of the shell commands fails
    (i.e. exits with a non-zero exit code) all following commands will not run
@@ -201,7 +201,7 @@ restique -p home restore latest --target /tmp/restore-home
    (i.e. exits with a non-zero exit code) all following commands including the
    restic command will not run and the program will exit.
 
- - `profile.[NAME].hooks.post-[COMMAND]` _(array of strings, optional)_: An
+ - `profile.[NAME].hooks.post_[COMMAND]` _(array of strings, optional)_: An
    array of shell commands that will be executed sequentially and in order
    after each restic `COMMAND` command. If one of the shell commands fails
    (i.e. exits with a non-zero exit code) all following commands will not run
@@ -211,7 +211,7 @@ restique -p home restore latest --target /tmp/restore-home
 
 Hooks can be used to do stuff before and after the repo is accessed, or before
 and after a specific command is executed. For example, a USB drive could be
-mounted in the `pre-repo` hook and then unmounted in the `post-repo` hook.
+mounted in the `pre-repo` hook and then unmounted in the `post_repo` hook.
 
 Each hook is executed in a separate shell and has access to all environment
 variables including the ones passed to restic. Hooks are executed in the
@@ -220,11 +220,11 @@ following order:
  - `pre-repo`
  - `pre-[COMMAND]` (unless pre-repo failed)
  - _call to restic_ (unless pre-[COMMAND] failed)
- - `post-[COMMAND]` (unless the restic command failed)
- - `post-repo` (unless post-[COMMAND] failed)
+ - `post_[COMMAND]` (unless the restic command failed)
+ - `post_repo` (unless post_[COMMAND] failed)
 
 So in case of `restique backup` it would call `pre-repo`, `pre-backup`, `restic
-backup`, `post-backup` and finally `post-repo`.
+backup`, `post_backup` and finally `post_repo`.
 
 ## Examples
 

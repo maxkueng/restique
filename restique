@@ -46,8 +46,8 @@ profile_field_types = {
     'files': list,
     'excludes': list,
     'hooks': dict,
-    'pre-repo': list,
-    'post-repo': list,
+    'pre_repo': list,
+    'post_repo': list,
 }
 
 def merge_profiles(p1, p2):
@@ -330,12 +330,12 @@ def cmd_default(command, config, args):
 
     cmd += args.resticargs
 
-    run_cmd_hooks(config, env, 'pre-repo')
-    run_cmd_hooks(config, env, 'pre-' + command)
+    run_cmd_hooks(config, env, 'pre_repo')
+    run_cmd_hooks(config, env, 'pre_' + command)
     initialize(config, args)
     rc = run_noninteractive_command(cmd, env)
-    run_cmd_hooks(config, env, 'post-' + command)
-    run_cmd_hooks(config, env, 'post-repo')
+    run_cmd_hooks(config, env, 'post_' + command)
+    run_cmd_hooks(config, env, 'post_repo')
     sys.exit(rc)
 
 def cmd_backup(command, config, args):
@@ -365,12 +365,12 @@ def cmd_backup(command, config, args):
 
     cmd += args.resticargs
 
-    run_cmd_hooks(config, env, 'pre-repo')
-    run_cmd_hooks(config, env, 'pre-' + command)
+    run_cmd_hooks(config, env, 'pre_repo')
+    run_cmd_hooks(config, env, 'pre_' + command)
     initialize(config, args)
     rc = run_noninteractive_command(cmd, env)
-    run_cmd_hooks(config, env, 'post-' + command)
-    run_cmd_hooks(config, env, 'post-repo')
+    run_cmd_hooks(config, env, 'post_' + command)
+    run_cmd_hooks(config, env, 'post_repo')
     sys.exit(rc)
 
 def cmd_key(command, config, args):
@@ -385,8 +385,8 @@ def cmd_key(command, config, args):
     cmd += args.resticargs
 
     rc = None
-    run_cmd_hooks(config, env, 'pre-repo')
-    run_cmd_hooks(config, env, 'pre-' + command)
+    run_cmd_hooks(config, env, 'pre_repo')
+    run_cmd_hooks(config, env, 'pre_' + command)
 
     initialize(config, args)
     if args.resticargs and 'add' in args.resticargs:
@@ -394,8 +394,8 @@ def cmd_key(command, config, args):
     else:
         rc = run_noninteractive_command(cmd, env)
 
-    run_cmd_hooks(config, env, 'post-' + command)
-    run_cmd_hooks(config, env, 'post-repo')
+    run_cmd_hooks(config, env, 'post_' + command)
+    run_cmd_hooks(config, env, 'post_repo')
 
     sys.exit(rc)
 
@@ -404,13 +404,13 @@ def cmd_version(command, config, args):
 
     cmd = get_base_cmd(command, config)
 
-    run_cmd_hooks(config, {}, 'pre-repo')
-    run_cmd_hooks(config, {}, 'pre-' + command)
+    run_cmd_hooks(config, {}, 'pre_repo')
+    run_cmd_hooks(config, {}, 'pre_' + command)
     print(__PROG__ + ' ' + __VERSION__)
     print('python ' + platform.python_version())
     rc = run_noninteractive_command(cmd, {})
-    run_cmd_hooks(config, {}, 'post-' + command)
-    run_cmd_hooks(config, {}, 'post-repo')
+    run_cmd_hooks(config, {}, 'post_' + command)
+    run_cmd_hooks(config, {}, 'post_repo')
 
     sys.exit(rc)
 
@@ -419,19 +419,19 @@ def cmd_test(command, config, args):
     check_forbidden_args(args.resticargs)
 
     env = get_base_env(config)
-    if not run_hooks(config, env, 'pre-repo'):
+    if not run_hooks(config, env, 'pre_repo'):
         fatal_exit('Hooks failed.')
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
-    run_cmd_hooks(config, env, 'pre-repo')
-    run_cmd_hooks(config, env, 'pre-' + command)
+    run_cmd_hooks(config, env, 'pre_repo')
+    run_cmd_hooks(config, env, 'pre_' + command)
     logging.debug(command)
     logging.debug(pp.pformat(config))
     logging.debug(pp.pformat(env))
     logging.debug(pp.pformat(cmd))
-    run_cmd_hooks(config, env, 'post-' + command)
-    run_cmd_hooks(config, env, 'post-repo')
+    run_cmd_hooks(config, env, 'post_' + command)
+    run_cmd_hooks(config, env, 'post_repo')
 
 def main(args, loglevel):
     logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
