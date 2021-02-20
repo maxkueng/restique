@@ -342,13 +342,17 @@ def initialize(config, args):
     cmd = get_base_cmd('snapshots', config)
     rc = run_quiet_command(cmd, env)
     if rc != 0:
-        logging.debug('Repo not yet initialized')
-        logging.debug('Initializing repo')
-        initCmd = get_base_cmd('init', config)
-        initRc = run_noninteractive_command(initCmd, env)
+        if 'initialize' in config and config['initialize'] == True:
+            logging.debug('Repo not yet initialized')
+            logging.debug('Initializing repo')
+            initCmd = get_base_cmd('init', config)
+            initRc = run_noninteractive_command(initCmd, env)
 
-        if initRc != 0:
-            sys.exit(rc)
+            if initRc != 0:
+                sys.exit(rc)
+        else:
+            logging.debug('Repo not initialized. Exiting')
+            sys.exit(1)
     else:
         logging.debug('Repo already initialized')
 
