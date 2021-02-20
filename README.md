@@ -103,13 +103,13 @@ restique -p home restore latest --target /tmp/restore-home
       "google_project_id": "...",
       "google_application_credentials": "...",
       "hooks": {
-        "pre-repo": [
+        "pre_repo": [
           "some-shell-commands"
         ],
         "post_repo": [
           // ...
         ],
-        "pre-<COMMAND>": [
+        "pre_<COMMAND>": [
           // ...
         ],
         "post_<COMMAND>": [
@@ -230,7 +230,7 @@ restique -p home restore latest --target /tmp/restore-home
    path to Google Cloud Storage application credentials file. Used only when
    hosting the repository on Google Cloud Storage.
 
- - `profile.[NAME].hooks.pre-repo` _(array of strings, optional)_: An array of
+ - `profile.[NAME].hooks.pre_repo` _(array of strings, optional)_: An array of
    shell commands that will be executed sequentially and in order before each
    restic command that accesses the repo. If one of the shell commands fails
    (i.e. exits with a non-zero exit code) all following commands including the
@@ -242,7 +242,7 @@ restique -p home restore latest --target /tmp/restore-home
    (i.e. exits with a non-zero exit code) all following commands will not run
    and the program will exit.
 
- - `profile.[NAME].hooks.pre-[COMMAND]` _(array of strings, optional)_: An
+ - `profile.[NAME].hooks.pre_[COMMAND]` _(array of strings, optional)_: An
    array of shell commands that will be executed sequentially and in order
    before each restic `[COMMAND]` command. If one of the shell commands fails
    (i.e. exits with a non-zero exit code) all following commands including the
@@ -258,19 +258,19 @@ restique -p home restore latest --target /tmp/restore-home
 
 Hooks can be used to do stuff before and after the repo is accessed, or before
 and after a specific command is executed. For example, a USB drive could be
-mounted in the `pre-repo` hook and then unmounted in the `post_repo` hook.
+mounted in the `pre_repo` hook and then unmounted in the `post_repo` hook.
 
 Each hook is executed in a separate shell and has access to all environment
 variables including the ones passed to restic. Hooks are executed in the
 following order:
 
- - `pre-repo`
- - `pre-[COMMAND]` (unless pre-repo failed)
- - _call to restic_ (unless pre-[COMMAND] failed)
+ - `pre_repo`
+ - `pre_[COMMAND]` (unless pre_repo failed)
+ - _call to restic_ (unless pre_[COMMAND] failed)
  - `post_[COMMAND]` (unless the restic command failed)
  - `post_repo` (unless post_[COMMAND] failed)
 
-So in case of `restique backup` it would call `pre-repo`, `pre-backup`, `restic
+So in case of `restique backup` it would call `pre_repo`, `pre_backup`, `restic
 backup`, `post_backup` and finally `post_repo`.
 
 ## Examples
@@ -449,8 +449,8 @@ restique -p local restore 0eb99523 --target /tmp/personal-restored
       "files": [
         "/home"
       ],
-      "pre-repo": [
-        "grep -qs '/mnt/my_external_drive/backups' /proc/mounts"
+      "pre_repo": [
+        "mountpoint -q '/mnt/my_external_drive/backups'"
       ]
     }
   }
@@ -465,8 +465,8 @@ restique backup
 
 Output:
 ```
-ERROR: Command 'grep -qs '/mnt/my_external_drive/backups' /proc/mounts' returned non-zero exit status 1.
-ERROR: One or more 'pre-repo' hooks failed.
+ERROR: Command 'mountpoint -q '/mnt/my_external_drive/backups'' returned non-zero exit status 1.
+ERROR: One or more 'pre_repo' hooks failed.
 ```
 
 ## License
