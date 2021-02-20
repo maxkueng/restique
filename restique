@@ -43,11 +43,22 @@ def get_config_file_path(args):
     fatal_exit('Couldn\'t find a config file. Valid config file locations are ' + str(config_paths) + ' or specified through the --config argument')
 
 profile_field_types = {
+    'json': bool,
+    'quiet': bool,
+    'no_lock': bool,
     'files': list,
     'excludes': list,
     'hooks': dict,
     'pre_repo': list,
     'post_repo': list,
+}
+
+config_args = {
+    'repository': '--repo',
+    'json': '--json',
+    'quiet': '--quiet',
+    'no_lock': '--no-lock',
+    'excludes': '--exclude',
 }
 
 def merge_profiles(p1, p2):
@@ -238,19 +249,41 @@ def run_cmd_hooks(config, env, hook_name):
     if not run_hooks(config, env, hook_name):
         fatal_exit('One or more \'' + hook_name + '\' hooks failed.')
 
+def get_cmd_arg(prop, config):
+    arg = config_args[prop]
+
+    if (prop in config):
+        if prop in profile_field_types and profile_field_types[prop] == bool:
+            if config[prop] == True:
+                return [arg]
+            else:
+                return []
+
+        if prop in profile_field_types and profile_field_types[prop] == list:
+            cmd_parts = []
+
+            for value in config[prop]:
+                cmd_parts += [
+                    arg,
+                    value,
+                ]
+            return cmd_parts
+        
+        return [
+            arg,
+            str(config[prop]),
+        ]
+
+    return []
+
 def get_base_cmd(command, config):
     cmd = []
     cmd += [get_restic_path(config)]
-    cmd += ['--repo', config['repository']]
 
-    if 'quiet' in config and config['quiet'] == True:
-        cmd += ['--quiet']
-
-    if 'json' in config and config['json'] == True:
-        cmd += ['--json']
-
-    if 'no_lock' in config and config['no_lock'] == True:
-        cmd += ['--no-lock']
+    cmd += get_cmd_arg('repository', config)
+    cmd += get_cmd_arg('quiet', config)
+    cmd += get_cmd_arg('json', config)
+    cmd += get_cmd_arg('no_lock', config)
 
     cmd += [command]
 
@@ -355,13 +388,7 @@ def cmd_backup(command, config, args):
         ])
 
         cmd += config['files']
-
-        if ('excludes' in config):
-            for pattern in config['excludes']:
-                cmd += [
-                    '--exclude',
-                    pattern,
-                ]
+        cmd += get_cmd_arg('excludes', config)
 
     cmd += args.resticargs
 
