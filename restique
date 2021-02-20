@@ -48,6 +48,9 @@ profile_field_types = {
     'no_lock': bool,
     'files': list,
     'excludes': list,
+    'keep_tags': list,
+    'forget_tags': list,
+    'forget_hosts': list,
     'hooks': dict,
     'pre_repo': list,
     'post_repo': list,
@@ -59,6 +62,16 @@ config_args = {
     'quiet': '--quiet',
     'no_lock': '--no-lock',
     'excludes': '--exclude',
+    'keep_last': '--keep-last',
+    'keep_hourly': '--keep-hourly',
+    'keep_daily': '--keep-daily',
+    'keep_weekly': '--keep-weekly',
+    'keep_monthly': '--keep-monthly',
+    'keep_yearly': '--keep-yearly',
+    'keep_within': '--keep-within',
+    'keep_tags': '--keep-tag',
+    'forget_tags': '--tag',
+    'forget_hosts': '--host',
 }
 
 def merge_profiles(p1, p2):
@@ -404,6 +417,36 @@ def cmd_backup(command, config, args):
     run_cmd_hooks(config, env, 'post_repo')
     sys.exit(rc)
 
+def cmd_forget(command, config, args):
+    logging.debug('Running forget command handler')
+
+    check_config(config)
+    check_forbidden_args(args.resticargs)
+
+    env = get_base_env(config)
+    cmd = get_base_cmd(command, config)
+
+    cmd += get_cmd_arg('keep_last', config)
+    cmd += get_cmd_arg('keep_hourly', config)
+    cmd += get_cmd_arg('keep_daily', config)
+    cmd += get_cmd_arg('keep_weekly', config)
+    cmd += get_cmd_arg('keep_monthly', config)
+    cmd += get_cmd_arg('keep_yearly', config)
+    cmd += get_cmd_arg('keep_within', config)
+    cmd += get_cmd_arg('keep_tags', config)
+    cmd += get_cmd_arg('forget_tags', config)
+    cmd += get_cmd_arg('forget_hosts', config)
+
+    cmd += args.resticargs
+
+    run_cmd_hooks(config, env, 'pre_repo')
+    run_cmd_hooks(config, env, 'pre_' + command)
+    initialize(config, args)
+    rc = run_noninteractive_command(cmd, env)
+    run_cmd_hooks(config, env, 'post_' + command)
+    run_cmd_hooks(config, env, 'post_repo')
+    sys.exit(rc)
+
 def cmd_key(command, config, args):
     logging.debug('Running key command handler')
 
@@ -481,6 +524,7 @@ def main(args, loglevel):
 
     commands = {
         'backup': cmd_backup,
+        'forget': cmd_forget,
         'key': cmd_key,
         'version': cmd_version,
         'test': cmd_test,

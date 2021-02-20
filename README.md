@@ -87,6 +87,11 @@ restique -p home restore latest --target /tmp/restore-home
         "*.go",
         "foo/**/bar"
       ],
+      "keep_daily": 5,
+      "keep_weekly": 4,
+      "keep_monthly": 6,
+      "keep_yearly": 10,
+      "keep_tags": ["important"],
       "password": "correct horse battery staple",
       "repository": "/path/to/repo",
       "aws_access_key": "...",
@@ -156,6 +161,45 @@ restique -p home restore latest --target /tmp/restore-home
    Note that this only applies to the `backup` command. Exclude patterns for
    the `restore` command must be provided through the `--exclude` and
    `--include` arguments.
+
+ - `profile.[NAME].forget_tags` _(array, optional)_: List of tags to consider
+   when running the `forget` command. Equivalent of multiple `--tag t`
+   arguments.
+
+ - `profile.[NAME].forget_hosts` _(array, optional)_: List of hosts to consider
+   when running the `forget` command. Equivalent of multiple `--host h`
+   arguments.
+
+ - `profile.[NAME].keep_last` _(number, optional)_: Number of most recent
+   snapshots to keep. Equivalent of `--keep-last n`. Only used with `forget`
+   command.
+
+ - `profile.[NAME].keep_hourly` _(number, optional)_: Number of hourly
+   snapshots to keep. Equivalent of `--keep-hourly n`. Only used with `forget`
+   command.
+
+ - `profile.[NAME].keep_daily` _(number, optional)_: Number of daily snapshots
+   to keep. Equivalent of `--keep-daily n`. Only used with `forget` command.
+
+ - `profile.[NAME].keep_weekly` _(number, optional)_: Number of weekly
+   snapshots to keep. Equivalent of `--keep-weekly n`. Only used with `forget`
+   command.
+
+ - `profile.[NAME].keep_monthly` _(number, optional)_: Number of monthly
+   snapshots to keep. Equivalent of `--keep-monthly n`. Only used with `forget`
+   command.
+
+ - `profile.[NAME].keep_yearly` _(number, optional)_: Number of yearly
+   snapshots to keep. Equivalent of `--keep-yearly n`. Only used with `forget`
+   command.
+
+ - `profile.[NAME].keep_tags` _(array, optional)_: List of snapshot tags to
+   keep. Equivalent of using multiple `--keep-tag t` arguments. Only used with
+   `forget` command.
+
+ - `profile.[NAME].keep_within` _(string, optional)_: Diration within to keep
+   all snapshots. For example `2y5m7d3h`.  Equivalent of `--keep-within d`.
+   Only used with `forget` command.
 
  - `profile.[NAME].password` _(string, required)_: The password that will be
    used to encrypt and sign the backup.
