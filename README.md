@@ -261,9 +261,12 @@ Hooks can be used to do stuff before and after the repo is accessed, or before
 and after a specific command is executed. For example, a USB drive could be
 mounted in the `pre_repo` hook and then unmounted in the `post_repo` hook.
 
-Each hook is executed in a separate shell and has access to all environment
-variables including the ones passed to restic. Hooks are executed in the
-following order:
+You can execute multiple shell commands for the same hook, which is why they
+must be configured as an array.
+
+Each hook is executed sequentially in a separate shell and has access to all
+environment variables including the ones passed to restic. Hooks are executed
+in the following order:
 
  - `pre_repo`
  - `pre_[COMMAND]` (unless pre_repo failed)
@@ -273,6 +276,10 @@ following order:
 
 So in case of `restique backup` it would call `pre_repo`, `pre_backup`, `restic
 backup`, `post_backup`, and finally `post_repo`.
+
+If a hook fails (returns non-zero exit code) the program will exit and no
+futher hooks or commands will run. This can be used to prevent running backups
+unless certain conditions are met.
 
 ## Examples
 
