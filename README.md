@@ -103,9 +103,12 @@ restique -p home restore latest --target /tmp/restore-home
       "azure_account_key": "...",
       "google_project_id": "...",
       "google_application_credentials": "...",
+      "hook_env": {
+        "YOLO": "woop woop"
+      },
       "hooks": {
         "pre_repo": [
-          "some-shell-commands"
+          "echo $YOLO"
         ],
         "post_repo": [
           // ...
@@ -231,6 +234,9 @@ restique -p home restore latest --target /tmp/restore-home
    path to Google Cloud Storage application credentials file. Used only when
    hosting the repository on Google Cloud Storage.
 
+ - `profile.[NAME].hook_env` _(dict, optional)_: Additional environment
+   variables that are passed to all hooks.
+
  - `profile.[NAME].hooks.pre_repo` _(array of strings, optional)_: An array of
    shell commands that will be executed sequentially and in order before each
    restic command that accesses the repo. If one of the shell commands fails
@@ -265,8 +271,9 @@ You can execute multiple shell commands for the same hook, which is why they
 must be configured as an array.
 
 Each hook is executed sequentially in a separate shell and has access to all
-environment variables including the ones passed to restic. Hooks are executed
-in the following order:
+environment variables including the ones passed to restic and a few more.
+
+Hooks are executed in the following order:
 
  - `pre_repo`
  - `pre_[COMMAND]` (unless pre_repo failed)
@@ -280,6 +287,14 @@ backup`, `post_backup`, and finally `post_repo`.
 If a hook fails (returns non-zero exit code) the program will exit and no
 futher hooks or commands will run. This can be used to prevent running backups
 unless certain conditions are met.
+
+#### Hook Environment Variables
+
+Hooks receive all the environment variables including the ones passed to restic. Additionally, hooks have access to:
+
+ - `RESTIQUE_HOOK`: The current hook name such as `pre_repo`, `post_repo`, `pre_backup`, etc.
+ - `RESTIQUE_CONFIG_PATH`: Path to the restique config file.
+ - All the variables defined in `hook_env`.
 
 ## Examples
 

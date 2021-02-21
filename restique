@@ -16,6 +16,8 @@ __VERSION__ = '0.0.1'
 
 pp = pprint.PrettyPrinter(width=80)
 
+config_path = None
+
 def fatal_exit(msg = 'An error occurred'):
     logging.error(msg)
     sys.exit(1)
@@ -223,13 +225,35 @@ def run_noninteractive_command(cmd, env = {}):
         logging.info('Received keyboard interrupt')
         return(None)
 
-def run_hook(cmd, env):
-    env_with_path = env.copy()
-    env_with_path.update(os.environ.copy())
+def get_hook_env(config, env, extra_env):
+    hook_env = env.copy()
+    hook_env.update(os.environ.copy())
+    
+    hook_env.update({
+        'RESTIQUE_CONFIG_PATH': str(config_path),
+    })
 
+    if 'repository' in config:
+        hook_env.update({
+            'RESTIQUE_REPOSITORY': config['repository'],
+        })
+    
+    if 'hook_env' in config:
+        for name in config['hook_env']:
+            print('HOOK ENV' + name)
+            hook_env.update({
+                name: str(config['hook_env'][name]),
+            })
+            
+    if extra_env:
+        hook_env.update(extra_env)
+    
+    return hook_env
+
+def run_hook(env, cmd):
     return subprocess.run(
         cmd,
-        env=env_with_path,
+        env=env,
         shell=True,
         check=True,
     )
@@ -248,11 +272,15 @@ def run_hooks(config, env, hook_name):
 
     successful = True
     for hook_cmd in hooks:
+        hook_env = get_hook_env(config, env, {
+            'RESTIQUE_HOOK': hook_name,
+        })
         logging.debug('Running ' + hook_name + ' hook: ' + hook_cmd)
         try:
-            rc = run_hook(hook_cmd, env)
+            rc = run_hook(hook_env, hook_cmd)
         except subprocess.CalledProcessError as err:
             successful = False
+            print('RC ' + str(err.returncode))
             logging.error(err)
             break
 
@@ -508,6 +536,8 @@ def cmd_test(command, config, args):
     run_cmd_hooks(config, env, 'post_repo')
 
 def main(args, loglevel):
+    global config_path
+
     logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
 
     config_path = get_config_file_path(args)
