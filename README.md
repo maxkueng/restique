@@ -7,7 +7,8 @@ allows using multiple backup profiles defined in a JSON configuration file.
 You should be familiar with restic before using this. Read the [restic manual][restic-manual] first.
 
 It's written in Python and uses only core modules so that there are no extra
-dependencies to install, and no compilation or build steps.
+dependencies to install, and no compilation or build steps.  
+You can literally just copy this into `/usr/bin/` and you're done.
 
 _:see_no_evil:  I don't really know Python. So if you see some bad things in the
 code please feel free to file an issue or create a pull request. It will be
@@ -271,7 +272,7 @@ following order:
  - `post_repo` (unless post_[COMMAND] failed)
 
 So in case of `restique backup` it would call `pre_repo`, `pre_backup`, `restic
-backup`, `post_backup` and finally `post_repo`.
+backup`, `post_backup`, and finally `post_repo`.
 
 ## Examples
 
@@ -449,9 +450,11 @@ restique -p local restore 0eb99523 --target /tmp/personal-restored
       "files": [
         "/home"
       ],
-      "pre_repo": [
-        "mountpoint -q '/mnt/my_external_drive/backups'"
-      ]
+      "hooks": {
+        "pre_repo": [
+          "mountpoint -q '/mnt/my_external_drive/backups'"
+        ]
+      }
     }
   }
 }
