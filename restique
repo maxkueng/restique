@@ -82,6 +82,8 @@ def merge_profiles(p1, p2):
 
     for key in keys:
         t = profile_field_types[key] if key in profile_field_types else None
+        if t is None and (key.startswith("pre_") or key.startswith("post_")):
+            t = list
 
         if t == dict:
             p1_value = p1[key] if key in p1 else {}
