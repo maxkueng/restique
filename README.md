@@ -241,25 +241,29 @@ restique -p home restore latest --target /tmp/restore-home
    shell commands that will be executed sequentially and in order before each
    restic command that accesses the repo. If one of the shell commands fails
    (i.e. exits with a non-zero exit code) all following commands including the
-   restic command will not run and the program will exit.
+   restic command will not run and the program will exit, unless the command is
+   prefixed with `-` to allow failure.
 
  - `profile.[NAME].hooks.post_repo` _(array of strings, optional)_: An array of
    shell commands that will be executed sequentially and in order after each
    restic command that accesses the repo. If one of the shell commands fails
    (i.e. exits with a non-zero exit code) all following commands will not run
-   and the program will exit.
+   and the program will exit, unless the command is prefixed with `-` to
+   allow failure.
 
  - `profile.[NAME].hooks.pre_[COMMAND]` _(array of strings, optional)_: An
    array of shell commands that will be executed sequentially and in order
    before each restic `[COMMAND]` command. If one of the shell commands fails
    (i.e. exits with a non-zero exit code) all following commands including the
-   restic command will not run and the program will exit.
+   restic command will not run and the program will exit, unless the command is
+   prefixed with `-` to allow failure.
 
  - `profile.[NAME].hooks.post_[COMMAND]` _(array of strings, optional)_: An
    array of shell commands that will be executed sequentially and in order
    after each restic `COMMAND` command. If one of the shell commands fails
    (i.e. exits with a non-zero exit code) all following commands will not run
-   and the program will exit.
+   and the program will exit, unless the command is prefixed with `-` to
+   allow failure.
 
 ### About Hooks
 
@@ -273,6 +277,14 @@ must be configured as an array.
 Each hook is executed sequentially in a separate shell and has access to all
 environment variables including the ones passed to restic and a few more.
 
+By default, if a hook fails (returns a non-zero exit code) the program will
+exit and no further hooks or commands will run. This can be used to prevent
+running backups unless certain conditions are met.
+
+If a hook command starts with `-`, its failure will be ignored and execution
+will continue with the next hook command. Whitespace after the `-` is optional,
+so `"-umount /mnt/backup"` and `"- umount /mnt/backup"` are equivalent.
+
 Hooks are executed in the following order:
 
  - `pre_repo`
@@ -284,16 +296,14 @@ Hooks are executed in the following order:
 So in case of `restique backup` it would call `pre_repo`, `pre_backup`, `restic
 backup`, `post_backup`, and finally `post_repo`.
 
-If a hook fails (returns non-zero exit code) the program will exit and no
-futher hooks or commands will run. This can be used to prevent running backups
-unless certain conditions are met.
-
 #### Hook Environment Variables
 
 Hooks receive all the environment variables including the ones passed to restic. Additionally, hooks have access to:
 
  - `RESTIQUE_HOOK`: The current hook name such as `pre_repo`, `post_repo`, `pre_backup`, etc.
  - `RESTIQUE_CONFIG_PATH`: Path to the restique config file.
+ - `RESTIQUE_PREV_HOOK_RC`: Exit code of the previous hook command in the same
+   hook sequence. The first command receives `0`.
  - All the variables defined in `hook_env`.
 
 ## Examples

@@ -270,19 +270,28 @@ def run_hooks(config, env, hook_name):
 
     hooks = config['hooks'][hook_name]
 
+    previous_hook_rc = 0
     successful = True
     for hook_cmd in hooks:
         hook_env = get_hook_env(config, env, {
             'RESTIQUE_HOOK': hook_name,
+            'RESTIQUE_PREV_HOOK_RC': str(previous_hook_rc),
         })
+
+        ignore_failed_hook = hook_cmd.startswith('-')
+        if ignore_failed_hook:
+            hook_cmd = hook_cmd[1:].lstrip()
+
         logging.debug('Running ' + hook_name + ' hook: ' + hook_cmd)
         try:
-            rc = run_hook(hook_env, hook_cmd)
+            run_hook(hook_env, hook_cmd)
+            previous_hook_rc = 0
         except subprocess.CalledProcessError as err:
-            successful = False
-            print('RC ' + str(err.returncode))
-            logging.error(err)
-            break
+            previous_hook_rc = err.returncode
+            if not ignore_failed_hook:
+                successful = False
+                logging.error(err)
+                break
 
     return successful
 
