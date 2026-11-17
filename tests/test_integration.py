@@ -115,3 +115,11 @@ def test_json_output_is_clean(setup):
     result = runner.run('snapshots')
     assert result.returncode == 0, result.stderr
     assert len(json.loads(result.stdout)) == 1
+
+
+def test_password_command_is_rejected(setup):
+    runner, repo, _, _, _ = setup
+    result = runner.run('backup', '-q', '--password-command', 'echo pw')
+    assert result.returncode == 1
+    assert 'not supported' in result.stderr
+    assert not repo.exists()

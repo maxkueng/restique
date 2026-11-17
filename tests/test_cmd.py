@@ -80,3 +80,27 @@ def test_base_env_ignores_other_backend_credentials(restique):
 
 def test_swift_repository_is_allowed(restique):
     restique.check_config({'repository': 'swift:container:/', 'password': 'pw'})
+
+
+@pytest.mark.parametrize('args', [
+    ['-p', 'file'],
+    ['-pfile'],
+    ['--password-file', 'file'],
+    ['--password-file=file'],
+    ['--password-command', 'cmd'],
+    ['--password-command=cmd'],
+    ['--tag', 'x', '--password-file', 'file'],
+])
+def test_password_args_are_forbidden(restique, args):
+    with pytest.raises(SystemExit):
+        restique.check_forbidden_args(args)
+
+
+@pytest.mark.parametrize('args', [
+    [],
+    ['--new-password-file', 'file'],
+    ['--stdin-from-command', '--', 'cmd', '-p', 'x'],
+    ['--tag', 'pw'],
+])
+def test_other_args_are_allowed(restique, args):
+    restique.check_forbidden_args(args)

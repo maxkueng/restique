@@ -147,16 +147,24 @@ def check_config(config, required_keys = []):
         if not key in config:
             fatal_exit('Missing required config option \'' + key + '\'')
 
+PASSWORD_ARGS = [
+    '-p',
+    '--password-file',
+    '--password-command',
+]
+
+def is_arg(arg, name):
+    if name.startswith('--'):
+        return arg == name or arg.startswith(name + '=')
+    return arg.startswith(name)
+
 def check_forbidden_args(args, forbidden = []):
-    default_forbidden_args = [
-        '--password-file',
-    ]
-
-    all_forbidden_args = default_forbidden_args + forbidden
-
-    for key in args:
-        if key in all_forbidden_args:
-            fatal_exit('Argument \'' + key + '\' is currently not supported')
+    for arg in args:
+        if arg == '--':
+            break
+        for name in PASSWORD_ARGS + forbidden:
+            if is_arg(arg, name):
+                fatal_exit('Argument \'' + name + '\' is not supported, set \'password\' in the config instead')
 
 def get_restic_path(config):
     p = config['restic_path'] if 'restic_path' in config and config['restic_path'] != None else 'restic'
