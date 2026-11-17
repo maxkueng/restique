@@ -253,7 +253,6 @@ def get_hook_env(config, env, extra_env):
     
     if 'hook_env' in config:
         for name in config['hook_env']:
-            print('HOOK ENV' + name)
             hook_env.update({
                 name: str(config['hook_env'][name]),
             })
