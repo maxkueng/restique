@@ -104,3 +104,15 @@ def test_password_args_are_forbidden(restique, args):
 ])
 def test_other_args_are_allowed(restique, args):
     restique.check_forbidden_args(args)
+
+
+@pytest.mark.parametrize('args, interactive', [
+    (['add'], True),
+    (['passwd'], True),
+    (['add', '--new-password-file', 'f'], True),
+    (['list'], False),
+    (['remove', 'add'], False),
+    ([], False),
+])
+def test_interactive_key_command(restique, args, interactive):
+    assert restique.is_interactive_key_command(args) is interactive

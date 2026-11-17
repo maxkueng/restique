@@ -123,3 +123,14 @@ def test_password_command_is_rejected(setup):
     assert result.returncode == 1
     assert 'not supported' in result.stderr
     assert not repo.exists()
+
+
+@pytest.mark.parametrize('subcommand', ['add', 'passwd'])
+def test_key_with_new_password(setup, tmp_path, subcommand):
+    runner, repo, _, _, _ = setup
+    assert runner.run('backup', '-q').returncode == 0
+    new_password = tmp_path / 'new-password'
+    new_password.write_text('new-pw')
+    result = runner.run('key', subcommand, '--new-password-file', str(new_password))
+    assert result.returncode == 0, result.stderr
+    assert len(runner.snapshots(repo, 'new-pw')) == 1

@@ -492,6 +492,10 @@ def cmd_forget(command, config, args):
     run_cmd_hooks(config, env, 'post_repo')
     sys.exit(rc)
 
+def is_interactive_key_command(resticargs):
+    subcommand = next((arg for arg in resticargs if not arg.startswith('-')), None)
+    return subcommand in ('add', 'passwd')
+
 def cmd_key(command, config, args):
     logging.debug('Running key command handler')
 
@@ -508,7 +512,7 @@ def cmd_key(command, config, args):
     run_cmd_hooks(config, env, 'pre_' + command)
 
     initialize(config, args)
-    if args.resticargs and 'add' in args.resticargs:
+    if is_interactive_key_command(args.resticargs):
         rc = run_interactive_command(cmd, env)
     else:
         rc = run_noninteractive_command(cmd, env)
