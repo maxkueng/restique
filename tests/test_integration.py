@@ -134,3 +134,24 @@ def test_key_with_new_password(setup, tmp_path, subcommand):
     result = runner.run('key', subcommand, '--new-password-file', str(new_password))
     assert result.returncode == 0, result.stderr
     assert len(runner.snapshots(repo, 'new-pw')) == 1
+
+
+def test_combined_short_password_flag_is_rejected(setup, tmp_path):
+    runner, repo, _, _, _ = setup
+    assert runner.run('backup', '-q').returncode == 0
+    password_file = tmp_path / 'password'
+    password_file.write_text('pw')
+    result = runner.run('snapshots', '-qp', str(password_file))
+    assert result.returncode == 1
+    assert 'not supported' in result.stderr
+
+
+def test_short_flag_value_containing_p_is_allowed(setup):
+    runner, repo, data, _, _ = setup
+    (data / 'skip.pyc').write_text('x')
+    result = runner.run('backup', '-q', '-e*.pyc')
+    assert result.returncode == 0, result.stderr
+    snapshot_id = runner.snapshots(repo, 'pw')[0]['short_id']
+    listing = runner.run('ls', snapshot_id)
+    assert 'file' in listing.stdout
+    assert 'skip.pyc' not in listing.stdout

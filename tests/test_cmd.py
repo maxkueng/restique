@@ -82,28 +82,39 @@ def test_swift_repository_is_allowed(restique):
     restique.check_config({'repository': 'swift:container:/', 'password': 'pw'})
 
 
-@pytest.mark.parametrize('args', [
-    ['-p', 'file'],
-    ['-pfile'],
-    ['--password-file', 'file'],
-    ['--password-file=file'],
-    ['--password-command', 'cmd'],
-    ['--password-command=cmd'],
-    ['--tag', 'x', '--password-file', 'file'],
+@pytest.mark.parametrize('command, args', [
+    ('backup', ['-p', 'file']),
+    ('backup', ['-pfile']),
+    ('backup', ['--password-file', 'file']),
+    ('backup', ['--password-file=file']),
+    ('backup', ['--password-command', 'cmd']),
+    ('backup', ['--password-command=cmd']),
+    ('backup', ['--tag', 'x', '--password-file', 'file']),
+    ('snapshots', ['-qp', 'file']),
+    ('snapshots', ['-qvpfile']),
+    ('ls', ['-lp', 'file']),
+    ('forget', ['-cnp', 'file']),
+    ('unknown', ['-zp', 'file']),
 ])
-def test_password_args_are_forbidden(restique, args):
+def test_password_args_are_forbidden(restique, command, args):
     with pytest.raises(SystemExit):
-        restique.check_forbidden_args(args)
+        restique.check_forbidden_args(command, args)
 
 
-@pytest.mark.parametrize('args', [
-    [],
-    ['--new-password-file', 'file'],
-    ['--stdin-from-command', '--', 'cmd', '-p', 'x'],
-    ['--tag', 'pw'],
+@pytest.mark.parametrize('command, args', [
+    ('backup', []),
+    ('backup', ['--new-password-file', 'file']),
+    ('backup', ['--stdin-from-command', '--', 'cmd', '-p', 'x']),
+    ('backup', ['--tag', 'pw']),
+    ('backup', ['-ep*.tmp']),
+    ('backup', ['-Hpc']),
+    ('backup', ['-xep']),
+    ('forget', ['-lp']),
+    ('snapshots', ['-rpath']),
+    ('restore', ['-tpath']),
 ])
-def test_other_args_are_allowed(restique, args):
-    restique.check_forbidden_args(args)
+def test_other_args_are_allowed(restique, command, args):
+    restique.check_forbidden_args(command, args)
 
 
 @pytest.mark.parametrize('args, interactive', [

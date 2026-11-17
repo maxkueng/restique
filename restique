@@ -147,24 +147,47 @@ def check_config(config, required_keys = []):
         if not key in config:
             fatal_exit('Missing required config option \'' + key + '\'')
 
-PASSWORD_ARGS = [
-    '-p',
-    '--password-file',
-    '--password-command',
-]
+# From `restic --help` (0.19). Unlisted short flags are treated as boolean,
+# so a missing entry can only cause a false rejection.
+GLOBAL_VALUE_SHORT_FLAGS = 'opr'
+COMMAND_VALUE_SHORT_FLAGS = {
+    'backup': 'Heg',
+    'check': 'H',
+    'copy': 'H',
+    'dump': 'Hat',
+    'find': 'HNOs',
+    'forget': 'Hdglmwy',
+    'ls': 'Hs',
+    'mount': 'H',
+    'restore': 'Heit',
+    'rewrite': 'Hei',
+    'snapshots': 'Hg',
+    'stats': 'H',
+    'tag': 'H',
+}
+PASSWORD_LONG_FLAGS = ['--password-file', '--password-command']
 
-def is_arg(arg, name):
-    if name.startswith('--'):
-        return arg == name or arg.startswith(name + '=')
-    return arg.startswith(name)
+def is_password_arg(command, arg):
+    if arg.startswith('--'):
+        return arg.split('=', 1)[0] in PASSWORD_LONG_FLAGS
 
-def check_forbidden_args(args, forbidden = []):
+    if not arg.startswith('-'):
+        return False
+
+    value_flags = GLOBAL_VALUE_SHORT_FLAGS + COMMAND_VALUE_SHORT_FLAGS.get(command, '')
+    for flag in arg[1:]:
+        if flag == 'p':
+            return True
+        if flag in value_flags:
+            return False
+    return False
+
+def check_forbidden_args(command, args):
     for arg in args:
         if arg == '--':
             break
-        for name in PASSWORD_ARGS + forbidden:
-            if is_arg(arg, name):
-                fatal_exit('Argument \'' + name + '\' is not supported, set \'password\' in the config instead')
+        if is_password_arg(command, arg):
+            fatal_exit('Argument \'' + arg + '\' is not supported, set \'password\' in the config instead')
 
 def get_restic_path(config):
     p = config['restic_path'] if 'restic_path' in config and config['restic_path'] != None else 'restic'
@@ -418,7 +441,7 @@ def cmd_default(command, config, args):
     logging.debug('Running default command handler')
 
     check_config(config)
-    check_forbidden_args(args.resticargs)
+    check_forbidden_args(command, args.resticargs)
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
@@ -437,7 +460,7 @@ def cmd_backup(command, config, args):
     logging.debug('Running backup command handler')
 
     check_config(config)
-    check_forbidden_args(args.resticargs)
+    check_forbidden_args(command, args.resticargs)
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
@@ -466,7 +489,7 @@ def cmd_forget(command, config, args):
     logging.debug('Running forget command handler')
 
     check_config(config)
-    check_forbidden_args(args.resticargs)
+    check_forbidden_args(command, args.resticargs)
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
@@ -500,7 +523,7 @@ def cmd_key(command, config, args):
     logging.debug('Running key command handler')
 
     check_config(config)
-    check_forbidden_args(args.resticargs)
+    check_forbidden_args(command, args.resticargs)
 
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
@@ -539,7 +562,7 @@ def cmd_version(command, config, args):
 
 def cmd_test(command, config, args):
     check_config(config)
-    check_forbidden_args(args.resticargs)
+    check_forbidden_args(command, args.resticargs)
 
     env = get_base_env(config)
     if not run_hooks(config, env, 'pre_repo'):
