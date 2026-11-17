@@ -1,0 +1,41 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.14']
+        restic: ['0.17.3', '0.19.1']
+    name: python ${{ matrix.python }} / restic ${{ matrix.restic }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install restic
+        env:
+          RESTIC_VERSION: ${{ matrix.restic }}
+        run: |
+          base="https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}"
+          archive="restic_${RESTIC_VERSION}_linux_amd64.bz2"
+          curl -fsSLO "${base}/${archive}"
+          curl -fsSLO "${base}/SHA256SUMS"
+          sha256sum --ignore-missing -c SHA256SUMS
+          bunzip2 "${archive}"
+          sudo install -m 755 "${archive%.bz2}" /usr/local/bin/restic
+          restic version
+
+      - run: pip install pytest
+
+      - run: pytest -v tests

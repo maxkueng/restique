@@ -14,16 +14,16 @@ _:see_no_evil:  I don't really know Python. So if you see some bad things in the
 code please feel free to file an issue or create a pull request. It will be
 appreciated._
 
-Jump: [Installation](#installation) | [Usage](#usage) | [Configuration](#configuration) | [Examples](#examples) | [License](#license)
+Jump: [Installation](#installation) | [Usage](#usage) | [Configuration](#configuration) | [Examples](#examples) | [Development](#development) | [License](#license)
 
 ## Installation
 
 First, install Python 3. You probably already have it. Then [install
-restic][restic-install]. Then download the `restique` executable and put it
+restic][restic-install] 0.17 or newer. Then download the `restique` executable and put it
 somewhere in your `PATH`. Don't forget to `chmod +x path/to/restique`
 
-_:penguin: This program has only been tested on Linux with Python 3.6. It might not work
-with older Python versions or on other platforms._
+_:penguin: This program is tested on Linux with Python 3.10 to 3.14 and restic
+0.17 to 0.19. It might not work with older versions or on other platforms._
 
 ## Usage
 
@@ -506,6 +506,17 @@ ERROR: Command 'mountpoint -q '/mnt/my_external_drive/backups'' returned non-zer
 ERROR: One or more 'pre_repo' hooks failed.
 ```
 
+## Development
+
+The tests use [pytest][pytest]. Integration tests run restique against real
+local repositories in temporary directories and are skipped if `restic` is not
+in your `PATH`.
+
+```sh
+pip install pytest
+pytest tests
+```
+
 ## License
 
 Copyright (c) 2017 Max Kueng
@@ -513,6 +524,7 @@ Copyright (c) 2017 Max Kueng
 [MIT License][license]
 
 [restic]: https://github.com/restic/restic
+[pytest]: https://docs.pytest.org/
 [restic-install]: http://restic.readthedocs.io/en/latest/installation.html
 [restic-init]: http://restic.readthedocs.io/en/latest/manual.html#initialize-a-repository
 [restic-manual]: http://restic.readthedocs.io/en/latest/manual.html
