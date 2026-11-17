@@ -147,9 +147,6 @@ def check_config(config, required_keys = []):
         if not key in config:
             fatal_exit('Missing required config option \'' + key + '\'')
 
-    if config['repository'].startswith('swift:'):
-        fatal_exit('OpenStack Swift repositories are currently not supported')
-
 def check_forbidden_args(args, forbidden = []):
     default_forbidden_args = [
         '--password-file',

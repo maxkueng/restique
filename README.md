@@ -239,6 +239,8 @@ restique -p home restore latest --target /tmp/restore-home
    Credentials that are not set are left to restic, which can also pick them
    up from the environment, for example AWS profiles or IAM roles, Azure SAS
    tokens or managed identities, and Google application default credentials.
+   Backends without options here, such as OpenStack Swift, are configured
+   through environment variables as described in the [restic docs][restic-init].
 
  - `profile.[NAME].hook_env` _(dict, optional)_: Additional environment
    variables that are passed to all hooks.

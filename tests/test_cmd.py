@@ -76,3 +76,7 @@ def test_base_env_ignores_other_backend_credentials(restique):
         'aws_access_key': 'id',
     })
     assert env == {'RESTIC_PASSWORD': 'pw'}
+
+
+def test_swift_repository_is_allowed(restique):
+    restique.check_config({'repository': 'swift:container:/', 'password': 'pw'})
