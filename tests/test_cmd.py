@@ -121,8 +121,17 @@ def test_other_args_are_allowed(restique, command, args):
     (['add'], True),
     (['passwd'], True),
     (['add', '--new-password-file', 'f'], True),
+    (['--host', 'x', 'add'], True),
+    (['--host=x', 'passwd'], True),
+    (['-r', 'repo', 'add'], True),
+    (['--json', 'add'], True),
+    (['-q', 'add'], True),
+    (['-qv', 'add'], True),
+    (['--host', 'add'], False),
+    (['--', 'add'], False),
     (['list'], False),
     (['remove', 'add'], False),
+    (['--host', 'add', 'list'], False),
     ([], False),
 ])
 def test_interactive_key_command(restique, args, interactive):

@@ -155,3 +155,13 @@ def test_short_flag_value_containing_p_is_allowed(setup):
     listing = runner.run('ls', snapshot_id)
     assert 'file' in listing.stdout
     assert 'skip.pyc' not in listing.stdout
+
+
+def test_key_add_with_flag_before_subcommand(setup, tmp_path):
+    runner, repo, _, _, _ = setup
+    assert runner.run('backup', '-q').returncode == 0
+    new_password = tmp_path / 'new-password'
+    new_password.write_text('new-pw')
+    result = runner.run('key', '--host', 'otherhost', 'add', '--new-password-file', str(new_password))
+    assert result.returncode == 0, result.stderr
+    assert len(runner.snapshots(repo, 'new-pw')) == 1

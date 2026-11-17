@@ -515,9 +515,45 @@ def cmd_forget(command, config, args):
     run_cmd_hooks(config, env, 'post_repo')
     sys.exit(rc)
 
+# From `restic --help` (0.19). Like cobra, flags not listed here are assumed
+# to take the next argument as their value.
+GLOBAL_BOOL_SHORT_FLAGS = 'hqv'
+GLOBAL_BOOL_LONG_FLAGS = [
+    'cleanup-cache',
+    'help',
+    'insecure-no-password',
+    'insecure-tls',
+    'json',
+    'no-cache',
+    'no-extra-verify',
+    'no-lock',
+    'quiet',
+    'verbose',
+]
+
+def takes_value_before_subcommand(arg):
+    if '=' in arg:
+        return False
+    if arg.startswith('--'):
+        return arg[2:] not in GLOBAL_BOOL_LONG_FLAGS
+    return len(arg) == 2 and arg[1] not in GLOBAL_BOOL_SHORT_FLAGS
+
+def get_subcommand(resticargs):
+    args = list(resticargs)
+    while args:
+        arg = args.pop(0)
+        if arg == '--':
+            return None
+        if arg.startswith('-') and takes_value_before_subcommand(arg):
+            if len(args) <= 1:
+                return None
+            args.pop(0)
+        elif arg and not arg.startswith('-'):
+            return arg
+    return None
+
 def is_interactive_key_command(resticargs):
-    subcommand = next((arg for arg in resticargs if not arg.startswith('-')), None)
-    return subcommand in ('add', 'passwd')
+    return get_subcommand(resticargs) in ('add', 'passwd')
 
 def cmd_key(command, config, args):
     logging.debug('Running key command handler')
