@@ -142,8 +142,10 @@ restique -p home restore latest --target /tmp/restore-home
 
  - `global` _(object, optional)_: A global profile that will be merged into
    all other profiles. If the non-global profile contains the same options the
-   global options will be overridden by the profile. Except `files` and
-   `excludes` will be combined.
+   global options will be overridden by the profile. Except `files`,
+   `excludes`, `keep_tags`, `forget_tags`, `forget_hosts`, and all hook
+   commands will be combined, and `hook_env` variables will be merged by name
+   (the profile wins on conflicts).
 
  - `profiles.[NAME].initialize` _(boolean, optional, default: false)_: If true,
    it will automatically initialize an uninitialized repository.

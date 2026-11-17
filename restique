@@ -44,6 +44,8 @@ def get_config_file_path(args):
 
     fatal_exit('Couldn\'t find a config file. Valid config file locations are ' + str(config_paths) + ' or specified through the --config argument')
 
+SHALLOW_DICT = 'shallow_dict'
+
 profile_field_types = {
     'json': bool,
     'quiet': bool,
@@ -54,6 +56,7 @@ profile_field_types = {
     'forget_tags': list,
     'forget_hosts': list,
     'hooks': dict,
+    'hook_env': SHALLOW_DICT,
     'pre_repo': list,
     'post_repo': list,
 }
@@ -89,6 +92,9 @@ def merge_profiles(p1, p2):
             p1_value = p1[key] if key in p1 else {}
             p2_value = p2[key] if key in p2 else {}
             merged_profile[key] = merge_profiles(p1_value, p2_value)
+
+        elif t == SHALLOW_DICT:
+            merged_profile[key] = {**p1.get(key, {}), **p2.get(key, {})}
 
         elif t == list:
             p1_value = p1[key] if key in p1 else []
