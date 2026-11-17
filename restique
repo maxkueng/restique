@@ -351,50 +351,35 @@ def get_base_cmd(command, config):
 
     return cmd;
 
+BACKEND_CREDENTIALS = {
+    's3:': {
+        'aws_access_key': 'AWS_ACCESS_KEY_ID',
+        'aws_secret_key': 'AWS_SECRET_ACCESS_KEY',
+    },
+    'b2:': {
+        'b2_account_id': 'B2_ACCOUNT_ID',
+        'b2_account_key': 'B2_ACCOUNT_KEY',
+    },
+    'azure:': {
+        'azure_account_name': 'AZURE_ACCOUNT_NAME',
+        'azure_account_key': 'AZURE_ACCOUNT_KEY',
+    },
+    'gs:': {
+        'google_project_id': 'GOOGLE_PROJECT_ID',
+        'google_application_credentials': 'GOOGLE_APPLICATION_CREDENTIALS',
+    },
+}
+
 def get_base_env(config):
     env = {
         'RESTIC_PASSWORD': config['password'],
     }
 
-    if config['repository'].startswith('s3:'):
-        check_config(config, [
-            'aws_access_key',
-            'aws_secret_key',
-        ])
-        env.update({
-            'AWS_ACCESS_KEY_ID': config['aws_access_key'],
-            'AWS_SECRET_ACCESS_KEY': config['aws_secret_key'],
-        })
-
-    if config['repository'].startswith('b2:'):
-        check_config(config, [
-            'b2_account_id',
-            'b2_account_key',
-        ])
-        env.update({
-            'B2_ACCOUNT_ID': config['b2_account_id'],
-            'B2_ACCOUNT_KEY': config['b2_account_key'],
-        })
-
-    if config['repository'].startswith('azure:'):
-        check_config(config, [
-            'azure_account_name',
-            'azure_account_key',
-        ])
-        env.update({
-            'AZURE_ACCOUNT_NAME': config['azure_account_name'],
-            'AZURE_ACCOUNT_KEY': config['azure_account_key'],
-        })
-
-    if config['repository'].startswith('gs:'):
-        check_config(config, [
-            'google_project_id',
-            'google_application_credentials',
-        ])
-        env.update({
-            'GOOGLE_PROJECT_ID': config['google_project_id'],
-            'GOOGLE_APPLICATION_CREDENTIALS': config['google_application_credentials'],
-        })
+    for prefix, credentials in BACKEND_CREDENTIALS.items():
+        if config['repository'].startswith(prefix):
+            for key, env_name in credentials.items():
+                if key in config:
+                    env[env_name] = config[key]
 
     return env
 

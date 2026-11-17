@@ -236,6 +236,10 @@ restique -p home restore latest --target /tmp/restore-home
    path to Google Cloud Storage application credentials file. Used only when
    hosting the repository on Google Cloud Storage.
 
+   Credentials that are not set are left to restic, which can also pick them
+   up from the environment, for example AWS profiles or IAM roles, Azure SAS
+   tokens or managed identities, and Google application default credentials.
+
  - `profile.[NAME].hook_env` _(dict, optional)_: Additional environment
    variables that are passed to all hooks.
 

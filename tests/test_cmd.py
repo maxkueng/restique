@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_bool_arg(restique):
     assert restique.get_cmd_arg('quiet', {'quiet': True}) == ['--quiet']
     assert restique.get_cmd_arg('quiet', {'quiet': False}) == []
@@ -34,3 +37,42 @@ def test_base_env_s3(restique):
         'AWS_ACCESS_KEY_ID': 'id',
         'AWS_SECRET_ACCESS_KEY': 'secret',
     }
+
+
+def test_base_env_without_credentials(restique):
+    env = restique.get_base_env({'repository': 's3:example.com/bucket', 'password': 'pw'})
+    assert env == {'RESTIC_PASSWORD': 'pw'}
+
+
+def test_base_env_partial_credentials(restique):
+    env = restique.get_base_env({
+        'repository': 'azure:container:/',
+        'password': 'pw',
+        'azure_account_name': 'account',
+    })
+    assert env == {'RESTIC_PASSWORD': 'pw', 'AZURE_ACCOUNT_NAME': 'account'}
+
+
+@pytest.mark.parametrize('repository, credentials', [
+    ('b2:bucket:/', {'b2_account_id': 'B2_ACCOUNT_ID', 'b2_account_key': 'B2_ACCOUNT_KEY'}),
+    ('azure:c:/', {'azure_account_name': 'AZURE_ACCOUNT_NAME', 'azure_account_key': 'AZURE_ACCOUNT_KEY'}),
+    ('gs:bucket:/', {
+        'google_project_id': 'GOOGLE_PROJECT_ID',
+        'google_application_credentials': 'GOOGLE_APPLICATION_CREDENTIALS',
+    }),
+])
+def test_base_env_backend_credentials(restique, repository, credentials):
+    config = {'repository': repository, 'password': 'pw'}
+    config.update({key: key + '-value' for key in credentials})
+    env = restique.get_base_env(config)
+    expected = {name: key + '-value' for key, name in credentials.items()}
+    assert env == {'RESTIC_PASSWORD': 'pw', **expected}
+
+
+def test_base_env_ignores_other_backend_credentials(restique):
+    env = restique.get_base_env({
+        'repository': '/local/repo',
+        'password': 'pw',
+        'aws_access_key': 'id',
+    })
+    assert env == {'RESTIC_PASSWORD': 'pw'}
