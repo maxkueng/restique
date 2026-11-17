@@ -45,6 +45,7 @@ def get_config_file_path(args):
     fatal_exit('Couldn\'t find a config file. Valid config file locations are ' + str(config_paths) + ' or specified through the --config argument')
 
 SHALLOW_DICT = 'shallow_dict'
+RESTIC_RC_REPO_NOT_FOUND = 10
 
 profile_field_types = {
     'json': bool,
@@ -187,13 +188,17 @@ def get_process(cmd, env = {}):
 def run_quiet_command(cmd, env = {}):
     logging.debug('Quiet command: ' + ' '.join(cmd))
 
+    env_with_path = env.copy()
+    env_with_path.update(os.environ.copy())
+
     p = subprocess.run(
         cmd,
-        env=env,
+        env=env_with_path,
         capture_output=True,
+        text=True,
         shell=False,
     )
-    return p.returncode
+    return p
 
 def run_interactive_command(cmd, env = {}):
     logging.debug('Interactive command: ' + ' '.join(cmd))
@@ -398,21 +403,27 @@ def initialize(config, args):
     logging.debug('Checking if repos is initialized')
     env = get_base_env(config)
     cmd = get_base_cmd('snapshots', config)
-    rc = run_quiet_command(cmd, env)
-    if rc != 0:
-        if 'initialize' in config and config['initialize'] == True:
-            logging.debug('Repo not yet initialized')
-            logging.debug('Initializing repo')
-            initCmd = get_base_cmd('init', config)
-            initRc = run_noninteractive_command(initCmd, env)
+    result = run_quiet_command(cmd, env)
 
-            if initRc != 0:
-                sys.exit(rc)
-        else:
-            logging.debug('Repo not initialized. Exiting')
-            sys.exit(1)
-    else:
+    if result.returncode == 0:
         logging.debug('Repo already initialized')
+        return
+
+    if result.returncode != RESTIC_RC_REPO_NOT_FOUND:
+        logging.error('Failed to check repo:\n' + result.stderr.strip())
+        sys.exit(result.returncode)
+
+    if 'initialize' in config and config['initialize'] == True:
+        logging.debug('Repo not yet initialized')
+        logging.debug('Initializing repo')
+        initCmd = get_base_cmd('init', config)
+        initRc = run_noninteractive_command(initCmd, env)
+
+        if initRc != 0:
+            sys.exit(initRc)
+    else:
+        logging.debug('Repo not initialized. Exiting')
+        sys.exit(1)
 
 def cmd_default(command, config, args):
     logging.debug('Running default command handler')
@@ -442,7 +453,7 @@ def cmd_backup(command, config, args):
     env = get_base_env(config)
     cmd = get_base_cmd(command, config)
 
-    from_stdin = '--stdin' in args.resticargs
+    from_stdin = '--stdin' in args.resticargs or '--stdin-from-command' in args.resticargs
 
     if not from_stdin:
         check_config(config, [
